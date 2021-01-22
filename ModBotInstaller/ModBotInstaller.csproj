@@ -65,10 +65,13 @@
     <ManifestKeyFile>ModBotlauncher_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <GenerateManifests>true</GenerateManifests>
+    <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
     <SignManifests>true</SignManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetZone>LocalIntranet</TargetZone>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.WindowsAPICodePack, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -79,6 +82,9 @@
     </Reference>
     <Reference Include="Microsoft.WindowsAPICodePack.ShellExtensions, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.WindowsAPICodePack-Shell.1.1.0.0\lib\Microsoft.WindowsAPICodePack.ShellExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>..\Clone drone dlls\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -104,6 +110,9 @@
     <Compile Include="Form2.Designer.cs">
       <DependentUpon>Form2.cs</DependentUpon>
     </Compile>
+    <Compile Include="Injector\Injector.cs" />
+    <Compile Include="Injector\ModBotInjector.cs" />
+    <Compile Include="Injector\Util.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -133,7 +142,6 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <None Include="app.manifest" />
-    <None Include="ModBotlauncher_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -155,12 +163,6 @@
     <Content Include="ModBot.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AppDomainDelegateHolder\AppDomainDelegateHolder.csproj">
-      <Project>{755747bb-50f7-4f5f-ba21-b230412f3732}</Project>
-      <Name>AppDomainDelegateHolder</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
       <Visible>False</Visible>
       <ProductName>.NET Framework 3.5 SP1</ProductName>
@@ -169,11 +171,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(SolutionDir)Mod-BotLauncher/Dlls/$(TargetFileName)"
-copy /Y "$(TargetDir)AppDomainDelegateHolder.dll" "$(SolutionDir)Mod-BotLauncher/Dlls/AppDomainDelegateHolder.dll"
-copy /Y "$(TargetDir)Microsoft.WindowsAPICodePack.dll" "$(SolutionDir)Mod-BotLauncher/Dlls/Microsoft.WindowsAPICodePack.dll"
-copy /Y "$(TargetDir)Microsoft.WindowsAPICodePack.Shell.dll" "$(SolutionDir)Mod-BotLauncher/Dlls/Microsoft.WindowsAPICodePack.Shell.dll"
-copy /Y "$(TargetDir)Microsoft.WindowsAPICodePack.ShellExtensions.dll" "$(SolutionDir)Mod-BotLauncher/Dlls/Microsoft.WindowsAPICodePack.ShellExtensions.dll"
-</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

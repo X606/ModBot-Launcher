@@ -24,11 +24,15 @@ namespace ModBotInstaller
 		public const string EXPECTED_DIRECTORY = "C:/Program Files (x86)/Steam/steamapps/common/Clone Drone in the Danger Zone";
 		public const string DIRECTORY_SAVE_FILE = "SaveFile.txt";
 		public const string SKIP_SAVE_FILE = "skip.txt";
+		public const string BETA_DIRECTORY = "beta.txt";
 
 		public string SaveFilePath => Application.UserAppDataPath + "/" + DIRECTORY_SAVE_FILE;
 		public static string SkipFirstPageSaveFilePath => Application.UserAppDataPath + "/" + SKIP_SAVE_FILE;
+		public static string UseBetaFilePath => Application.UserAppDataPath + "/" + BETA_DIRECTORY;
+
 
 		public static string SelectedDirectory;
+		public static string BetaGetDirectory = null;
 
 		private void form_onLoad(object sender, EventArgs e)
 		{
@@ -64,6 +68,12 @@ namespace ModBotInstaller
 
 		private void MainForm_Shown(object sender, EventArgs e)
 		{
+			if (File.Exists(UseBetaFilePath))
+			{
+				BetaGetDirectory = File.ReadAllText(UseBetaFilePath);
+			}
+
+
 			string directory = EXPECTED_DIRECTORY;
 			if (File.Exists(SaveFilePath))
 			{
@@ -71,6 +81,7 @@ namespace ModBotInstaller
 			}
 
 			bool sucsess = TrySet(directory, false);
+
 			if (sucsess && File.Exists(SkipFirstPageSaveFilePath))
 			{
 				if (File.ReadAllText(SkipFirstPageSaveFilePath) == "true")

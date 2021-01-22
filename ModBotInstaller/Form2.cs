@@ -20,9 +20,12 @@ namespace ModBotInstaller
 		}
 
 		ModBotInstallationState _installationState;
+		bool _isLocalBeta = false;
 
 		private void Form2_Load(object sender, EventArgs e)
 		{
+			_isLocalBeta = MainForm.BetaGetDirectory != null;
+
 			if (File.Exists(MainForm.SkipFirstPageSaveFilePath))
 			{
 				SkipSelectScreen.Checked = File.ReadAllText(MainForm.SkipFirstPageSaveFilePath) == "true";
@@ -54,6 +57,12 @@ namespace ModBotInstaller
 				StatusLabel.Text = "Mod-Bot beta installed";
 				StatusLabel.ForeColor = Color.FromArgb(255, 0, 255);
 			}
+			
+			if(_isLocalBeta)
+			{
+				InstallButton.Text = "Start (beta)";
+				Reinstall.Text = "Start (non beta)";
+			}
 			_installationState = state;
 
 			LocalVersionLabel.Text = "Local version: " + modBotVersion;
@@ -73,6 +82,12 @@ namespace ModBotInstaller
 
 		void OnInstallFinished()
 		{
+			if (_isLocalBeta)
+			{
+				StartGameAndExit();
+				return;
+			}
+
 			Form2 form = new Form2();
 			form.Show();
 
@@ -106,7 +121,7 @@ namespace ModBotInstaller
 
 		private void InstallButton_Click(object sender, EventArgs e)
 		{
-			if (_installationState != ModBotInstallationState.UpToDate && _installationState != ModBotInstallationState.BetaVersion)
+			if ((_installationState != ModBotInstallationState.UpToDate && _installationState != ModBotInstallationState.BetaVersion) || _isLocalBeta)
 			{
 				InstallButton.Hide();
 				CloseButton.Hide();
@@ -123,6 +138,11 @@ namespace ModBotInstaller
 
 		private void Reinstall_Click(object sender, EventArgs e)
 		{
+			if (_isLocalBeta)
+			{
+				MainForm.BetaGetDirectory = null;
+			}
+
 			InstallButton.Hide();
 			CloseButton.Hide();
 			Reinstall.Hide();

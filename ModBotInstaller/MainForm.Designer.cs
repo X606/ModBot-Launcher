@@ -127,7 +127,7 @@ namespace ModBotInstaller
 			this.MaximizeBox = false;
 			this.Name = "MainForm";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-			this.Text = "Mod-Bot Installer";
+			this.Text = "Mod-Mod Launcher";
 			this.TopMost = true;
 			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
 			this.Load += new System.EventHandler(this.form_onLoad);

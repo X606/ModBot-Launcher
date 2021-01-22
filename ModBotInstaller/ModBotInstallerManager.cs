@@ -18,35 +18,54 @@ namespace ModBotInstaller
 		{
 			Thread worker = new Thread(delegate()
 			{
-				ServicePointManager.Expect100Continue = true;
-				ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+				SetProgress(0.1f);
 
-				string zipPath = Path.GetTempPath() + "modbot.zip";
-				using (var client = new WebClient())
+				string extractedZipFilePath;
+				if (MainForm.BetaGetDirectory == null)
 				{
-					client.DownloadFile(DownloadedData.ModBotDownloadLink, zipPath);
-				}
+					ServicePointManager.Expect100Continue = true;
+					ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-				SetProgress(0.5f);
+					string zipPath = Path.GetTempPath() + "modbot.zip";
+					using (var client = new WebClient())
+					{
+						client.DownloadFile(DownloadedData.ModBotDownloadLink, zipPath);
+					}
 
-				string extractedZipFilePath = Path.GetTempPath() + "modbot/";
-				if (Directory.Exists(extractedZipFilePath))
+					SetProgress(0.5f);
+
+					extractedZipFilePath = Path.GetTempPath() + "modbot/";
+					if (Directory.Exists(extractedZipFilePath))
+					{
+						Directory.Delete(extractedZipFilePath, true);
+					}
+
+					ZipFile.ExtractToDirectory(zipPath, extractedZipFilePath);
+					File.Delete(zipPath);
+				} else
 				{
-					Directory.Delete(extractedZipFilePath, true);
+					extractedZipFilePath = MainForm.BetaGetDirectory;
 				}
-
-				ZipFile.ExtractToDirectory(zipPath, extractedZipFilePath);
-				File.Delete(zipPath);
 
 				SetProgress(0.55f);
 
 				directoryCopy(extractedZipFilePath, installationPath, true);
 
-				//Directory.Delete(extractedZipFilePath, true);
+				if (MainForm.BetaGetDirectory == null)
+				{
+					Directory.Delete(extractedZipFilePath, true);
+				}
+					
 
 				SetProgress(0.6f);
 
 				string managedFolderPath = installationPath + "/Clone Drone in the Danger Zone_Data/Managed/";
+
+				Directory.SetCurrentDirectory(managedFolderPath);
+
+				// The injector is now packaged with this, so no need to run the injector
+				/*
+				
 				string injectorPath = managedFolderPath + "Injector.exe";
 
 				if (!File.Exists(injectorPath))
@@ -54,10 +73,16 @@ namespace ModBotInstaller
 					throw new Exception("Unable to find injetor... Please consult the idiot who uploaded this mod-bot version");
 				}
 
-				Directory.SetCurrentDirectory(managedFolderPath);
 				Process injector = Process.Start(injectorPath);
-				injector.CloseMainWindow();
 				injector.WaitForExit();
+				*/
+
+				Injector.ModBotInjector.InstallModBot(
+					managedFolderPath + "Assembly-CSharp.dll",
+					managedFolderPath + "InjectionClasses.dll",
+					managedFolderPath + "ModLibrary.dll",
+					managedFolderPath
+					);
 				
 				
 				SetProgress(1.0f);
@@ -198,6 +223,7 @@ namespace ModBotInstaller
 			);
 
 			modBotVersion = state.ModBotVersion;
+
 			return state.State;
 		}
 
