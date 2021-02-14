@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using Mono.Cecil;
+﻿using Mono.Cecil;
 using Mono.Cecil.Cil;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace ModBotInstaller.Injector
 {
-	public static class ModBotInjector
-	{
+    public static class ModBotInjector
+    {
         public static void InstallModBot(string installPath, string sourceToCopyClassesFrom, string modLibraryPath, string baseManagedPath)
         {
             Console.WriteLine("Starting the installation of Mod-Bot...");

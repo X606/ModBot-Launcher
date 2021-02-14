@@ -1,12 +1,10 @@
 ﻿using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Mono.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 namespace ModBotInstaller.Injector
 {
     public static class Injector
