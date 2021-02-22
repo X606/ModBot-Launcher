@@ -15,6 +15,18 @@ namespace ModBotInstaller
             SetStyle(ControlStyles.UserPaint, true);
         }
 
+        public float Progress
+        {
+            get
+            {
+                return Value / 100f;
+            }
+            set
+            {
+                Value = (int)(value * 100);
+            }
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             if (_orangeBrush == null)

@@ -1,0 +1,7 @@
+﻿[*.cs]
+
+# CS4014: Because this call is not awaited, execution of the current method continues before the call is completed
+dotnet_diagnostic.CS4014.severity = silent
+
+# CA1819: Properties should not return arrays
+dotnet_diagnostic.CA1819.severity = none

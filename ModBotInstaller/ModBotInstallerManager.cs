@@ -1,5 +1,6 @@
 ﻿using ModBotInstaller.Injector;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -53,32 +54,36 @@ namespace ModBotInstaller
 
                 SetProgress(0.55f);
 
-                directoryCopy(extractedZipFilePath, installationPath, true);
+                // System.IO.IOException: 'The requested operation cannot be performed on a file with a user-mapped section open.'
+
+                try
+                {
+                    Utils.CopyDirectory(extractedZipFilePath, installationPath);
+                }
+                catch (IOException)
+                {
+                    DialogResult dialogResult = MessageBox.Show("Could not access game files, they might be opened in another program, if you have Clone Drone running, please close it and try again.", "Error installing Mod-Bot", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+
+                    if (dialogResult == DialogResult.Retry)
+                    {
+                        Install(installationPath, onComplete);
+                        return;
+                    }
+                    else // DialogResult.Cancel
+                    {
+                        Process.GetCurrentProcess().Kill();
+                        return;
+                    }
+                }
 
                 if (!UserPreferences.Current.ShouldUseBetaPath)
                     Directory.Delete(extractedZipFilePath, true);
 
-                SetProgress(0.6f);
-
                 string managedFolderPath = installationPath + "/Clone Drone in the Danger Zone_Data/Managed/";
-
                 Directory.SetCurrentDirectory(managedFolderPath);
 
-                // The injector is now packaged with this, so no need to run the injector
-                /*
-				
-				string injectorPath = managedFolderPath + "Injector.exe";
-
-				if (!File.Exists(injectorPath))
-				{
-					throw new Exception("Unable to find injetor... Please consult the idiot who uploaded this mod-bot version");
-				}
-
-				Process injector = Process.Start(injectorPath);
-				injector.WaitForExit();
-				*/
-
-                ModBotInjector.InstallModBot(managedFolderPath + "Assembly-CSharp.dll", managedFolderPath + "InjectionClasses.dll", managedFolderPath + "ModLibrary.dll", managedFolderPath);
+                SetProgress(0.6f);
+                ModBotInjector.InstallModBot(managedFolderPath, delegate(float progress) { SetProgress(0.6f + (progress * 0.4f)); });
 
                 SetProgress(1f);
 
@@ -103,37 +108,7 @@ namespace ModBotInstaller
             });
         }
 
-        static void directoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
-        {
-            // Get the subdirectories for the specified directory.
-            DirectoryInfo dir = new DirectoryInfo(sourceDirName);
-
-            if (!dir.Exists)
-                throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + sourceDirName);
-
-            DirectoryInfo[] directories = dir.GetDirectories();
-
-            // If the destination directory doesn't exist, create it.       
-            Directory.CreateDirectory(destDirName);
-
-            // Get the files in the directory and copy them to the new location.
-            FileInfo[] files = dir.GetFiles();
-            foreach (FileInfo file in files)
-            {
-                string tempPath = Path.Combine(destDirName, file.Name);
-                file.CopyTo(tempPath, true);
-            }
-
-            // If copying subdirectories, copy them and their contents to new location.
-            if (copySubDirs)
-            {
-                foreach (DirectoryInfo subdir in directories)
-                {
-                    string tempPath = Path.Combine(destDirName, subdir.Name);
-                    directoryCopy(subdir.FullName, tempPath, copySubDirs);
-                }
-            }
-        }
+        
 
         public static ModBotInstallationState GetModBotInstallationState(string installationPath, out string currentlyInstalledModBotVersion, out string errorMessage)
         {
@@ -150,7 +125,7 @@ namespace ModBotInstaller
                 return ModBotInstallationState.NotInstalled;
             }
 
-            // WARNING: This code gets executed in its own AppDomain, so using any variables will not work, you will have to add a field to the GetModBotInstallationInputStateInfo class and ise it instead
+            // WARNING: This code gets executed in its own AppDomain, so using any variables will not work, you will have to add a field to the GetModBotInstallationInputStateInfo class and use it instead
             GetModBotInstallationOutputStateInfo state = NewAppDomain.Execute(new GetModBotInstallationInputStateInfo()
             {
                 AssemblyPath = assemblyPath,
@@ -160,8 +135,6 @@ namespace ModBotInstaller
             },
             delegate (GetModBotInstallationInputStateInfo input)
             {
-                bool foundModdedObject = false;
-
                 Assembly assemblyCSharpAssembly;
                 try
                 {
@@ -172,6 +145,7 @@ namespace ModBotInstaller
                     return new GetModBotInstallationOutputStateInfo(ModBotInstallationState.Failed, null, "Could not load one or more required files, if you have Clone Drone running, please close it and try again");
                 }
 
+                bool foundModdedObject = false;
                 Type[] types = assemblyCSharpAssembly.GetTypes();
                 foreach (Type type in types)
                 {

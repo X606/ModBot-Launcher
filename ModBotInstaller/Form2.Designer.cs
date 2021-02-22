@@ -29,7 +29,6 @@ namespace ModBotInstaller
 		/// </summary>
 		private void InitializeComponent()
 		{
-            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form2));
             this.InstallButton = new System.Windows.Forms.Button();
             this.CloseButton = new System.Windows.Forms.Button();
@@ -38,22 +37,27 @@ namespace ModBotInstaller
             this.LatestVersionLabel = new System.Windows.Forms.Label();
             this.Reinstall = new System.Windows.Forms.Button();
             this.installedModsView = new System.Windows.Forms.FlowLayoutPanel();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.label4 = new System.Windows.Forms.Label();
-            this.label3 = new System.Windows.Forms.Label();
-            this.pictureBox3 = new System.Windows.Forms.PictureBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.label1 = new System.Windows.Forms.Label();
+            this.installedModsItem_TEMPLATE = new System.Windows.Forms.Panel();
+            this.installedModsItem_TEMPLATE_UpdateStatus = new System.Windows.Forms.Label();
+            this.installedModsItem_TEMPLATE_UpdateProgressBar = new ModBotInstaller.NewProgressBar();
+            this.installedModsItem_TEMPLATE_UpdateButton = new System.Windows.Forms.Button();
+            this.installedModsItem_TEMPLATE_ModID = new System.Windows.Forms.Label();
+            this.installedModsItem_TEMPLATE_ModVersion = new System.Windows.Forms.Label();
+            this.installedModsItem_TEMPLATE_ModAuthor = new System.Windows.Forms.Label();
+            this.installedModsItem_TEMPLATE_SettingsIcon = new System.Windows.Forms.PictureBox();
+            this.installedModsItem_TEMPLATE_ModDescription = new System.Windows.Forms.Label();
+            this.installedModsItem_TEMPLATE_ModImage = new System.Windows.Forms.PictureBox();
+            this.installedModsItem_TEMPLATE_ModName = new System.Windows.Forms.Label();
             this.installedModsTitle = new System.Windows.Forms.Label();
-            this.modSettingsIconHover = new System.Windows.Forms.ToolTip(this.components);
             this.modBotSettingsButton = new System.Windows.Forms.Button();
             this.installingModBotLabel = new System.Windows.Forms.Label();
+            this.installedModsLoading = new System.Windows.Forms.Label();
             this.ProgressBar = new ModBotInstaller.NewProgressBar();
+            this.button1 = new System.Windows.Forms.Button();
             this.installedModsView.SuspendLayout();
-            this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            this.installedModsItem_TEMPLATE.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.installedModsItem_TEMPLATE_SettingsIcon)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.installedModsItem_TEMPLATE_ModImage)).BeginInit();
             this.SuspendLayout();
             // 
             // InstallButton
@@ -129,7 +133,7 @@ namespace ModBotInstaller
             this.Reinstall.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.Reinstall.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Reinstall.ForeColor = System.Drawing.Color.White;
-            this.Reinstall.Location = new System.Drawing.Point(263, 450);
+            this.Reinstall.Location = new System.Drawing.Point(263, 451);
             this.Reinstall.Name = "Reinstall";
             this.Reinstall.Size = new System.Drawing.Size(118, 23);
             this.Reinstall.TabIndex = 14;
@@ -142,111 +146,164 @@ namespace ModBotInstaller
             this.installedModsView.AutoScroll = true;
             this.installedModsView.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.installedModsView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.installedModsView.Controls.Add(this.panel1);
+            this.installedModsView.Controls.Add(this.installedModsItem_TEMPLATE);
             this.installedModsView.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-            this.installedModsView.Location = new System.Drawing.Point(7, 92);
+            this.installedModsView.Location = new System.Drawing.Point(9, 92);
             this.installedModsView.Name = "installedModsView";
             this.installedModsView.Padding = new System.Windows.Forms.Padding(5);
             this.installedModsView.Size = new System.Drawing.Size(500, 300);
             this.installedModsView.TabIndex = 15;
             this.installedModsView.WrapContents = false;
             // 
-            // panel1
+            // installedModsItem_TEMPLATE
             // 
-            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panel1.Controls.Add(this.label4);
-            this.panel1.Controls.Add(this.label3);
-            this.panel1.Controls.Add(this.pictureBox3);
-            this.panel1.Controls.Add(this.label2);
-            this.panel1.Controls.Add(this.pictureBox1);
-            this.panel1.Controls.Add(this.label1);
-            this.panel1.Location = new System.Drawing.Point(8, 8);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(465, 58);
-            this.panel1.TabIndex = 0;
-            this.panel1.Visible = false;
+            this.installedModsItem_TEMPLATE.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_UpdateStatus);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_UpdateProgressBar);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_UpdateButton);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_ModID);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_ModVersion);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_ModAuthor);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_SettingsIcon);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_ModDescription);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_ModImage);
+            this.installedModsItem_TEMPLATE.Controls.Add(this.installedModsItem_TEMPLATE_ModName);
+            this.installedModsItem_TEMPLATE.Location = new System.Drawing.Point(8, 8);
+            this.installedModsItem_TEMPLATE.Name = "installedModsItem_TEMPLATE";
+            this.installedModsItem_TEMPLATE.Size = new System.Drawing.Size(465, 98);
+            this.installedModsItem_TEMPLATE.TabIndex = 0;
+            this.installedModsItem_TEMPLATE.Visible = false;
             // 
-            // label4
+            // installedModsItem_TEMPLATE_UpdateStatus
             // 
-            this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.label4.AutoSize = true;
-            this.label4.Font = new System.Drawing.Font("Consolas", 6F);
-            this.label4.ForeColor = System.Drawing.Color.White;
-            this.label4.Location = new System.Drawing.Point(321, 33);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(81, 9);
-            this.label4.TabIndex = 6;
-            this.label4.Text = "Version: 1.55.7.0.4";
-            this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.installedModsItem_TEMPLATE_UpdateStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.installedModsItem_TEMPLATE_UpdateStatus.AutoSize = true;
+            this.installedModsItem_TEMPLATE_UpdateStatus.Font = new System.Drawing.Font("Consolas", 7F);
+            this.installedModsItem_TEMPLATE_UpdateStatus.ForeColor = System.Drawing.Color.White;
+            this.installedModsItem_TEMPLATE_UpdateStatus.Location = new System.Drawing.Point(373, 56);
+            this.installedModsItem_TEMPLATE_UpdateStatus.Name = "installedModsItem_TEMPLATE_UpdateStatus";
+            this.installedModsItem_TEMPLATE_UpdateStatus.Size = new System.Drawing.Size(90, 12);
+            this.installedModsItem_TEMPLATE_UpdateStatus.TabIndex = 24;
+            this.installedModsItem_TEMPLATE_UpdateStatus.Text = "Update available!";
+            this.installedModsItem_TEMPLATE_UpdateStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.installedModsItem_TEMPLATE_UpdateStatus.UseMnemonic = false;
             // 
-            // label3
+            // installedModsItem_TEMPLATE_UpdateProgressBar
             // 
-            this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Consolas", 6F);
-            this.label3.ForeColor = System.Drawing.Color.White;
-            this.label3.Location = new System.Drawing.Point(321, 42);
-            this.label3.MaximumSize = new System.Drawing.Size(128, 9);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(97, 9);
-            this.label3.TabIndex = 5;
-            this.label3.Text = "By: Cool mod person man";
-            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.label3.UseMnemonic = false;
+            this.installedModsItem_TEMPLATE_UpdateProgressBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(26)))), ((int)(((byte)(26)))));
+            this.installedModsItem_TEMPLATE_UpdateProgressBar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(104)))), ((int)(((byte)(0)))));
+            this.installedModsItem_TEMPLATE_UpdateProgressBar.Location = new System.Drawing.Point(253, 70);
+            this.installedModsItem_TEMPLATE_UpdateProgressBar.Name = "installedModsItem_TEMPLATE_UpdateProgressBar";
+            this.installedModsItem_TEMPLATE_UpdateProgressBar.Progress = 0F;
+            this.installedModsItem_TEMPLATE_UpdateProgressBar.Size = new System.Drawing.Size(207, 21);
+            this.installedModsItem_TEMPLATE_UpdateProgressBar.TabIndex = 23;
             // 
-            // pictureBox3
+            // installedModsItem_TEMPLATE_UpdateButton
             // 
-            this.pictureBox3.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.pictureBox3.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.pictureBox3.ErrorImage = null;
-            this.pictureBox3.Image = global::ModBotInstaller.Properties.Resources.SettingsIcon;
-            this.pictureBox3.InitialImage = null;
-            this.pictureBox3.Location = new System.Drawing.Point(435, 3);
-            this.pictureBox3.Name = "pictureBox3";
-            this.pictureBox3.Size = new System.Drawing.Size(25, 25);
-            this.pictureBox3.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.pictureBox3.TabIndex = 4;
-            this.pictureBox3.TabStop = false;
-            this.modSettingsIconHover.SetToolTip(this.pictureBox3, "Mod settings for [Mod name]");
+            this.installedModsItem_TEMPLATE_UpdateButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.installedModsItem_TEMPLATE_UpdateButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(65)))), ((int)(((byte)(65)))), ((int)(((byte)(65)))));
+            this.installedModsItem_TEMPLATE_UpdateButton.FlatAppearance.BorderSize = 0;
+            this.installedModsItem_TEMPLATE_UpdateButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.installedModsItem_TEMPLATE_UpdateButton.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.installedModsItem_TEMPLATE_UpdateButton.ForeColor = System.Drawing.Color.White;
+            this.installedModsItem_TEMPLATE_UpdateButton.Location = new System.Drawing.Point(386, 70);
+            this.installedModsItem_TEMPLATE_UpdateButton.Name = "installedModsItem_TEMPLATE_UpdateButton";
+            this.installedModsItem_TEMPLATE_UpdateButton.Size = new System.Drawing.Size(64, 21);
+            this.installedModsItem_TEMPLATE_UpdateButton.TabIndex = 22;
+            this.installedModsItem_TEMPLATE_UpdateButton.Text = "Update";
+            this.installedModsItem_TEMPLATE_UpdateButton.UseVisualStyleBackColor = false;
             // 
-            // label2
+            // installedModsItem_TEMPLATE_ModID
             // 
-            this.label2.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.label2.AutoEllipsis = true;
-            this.label2.Font = new System.Drawing.Font("Consolas", 7F);
-            this.label2.ForeColor = System.Drawing.Color.White;
-            this.label2.Location = new System.Drawing.Point(59, 17);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(256, 36);
-            this.label2.TabIndex = 2;
-            this.label2.Text = resources.GetString("label2.Text");
-            this.label2.UseMnemonic = false;
+            this.installedModsItem_TEMPLATE_ModID.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.installedModsItem_TEMPLATE_ModID.AutoSize = true;
+            this.installedModsItem_TEMPLATE_ModID.Font = new System.Drawing.Font("Consolas", 7F);
+            this.installedModsItem_TEMPLATE_ModID.ForeColor = System.Drawing.Color.White;
+            this.installedModsItem_TEMPLATE_ModID.Location = new System.Drawing.Point(3, 80);
+            this.installedModsItem_TEMPLATE_ModID.Name = "installedModsItem_TEMPLATE_ModID";
+            this.installedModsItem_TEMPLATE_ModID.Size = new System.Drawing.Size(125, 12);
+            this.installedModsItem_TEMPLATE_ModID.TabIndex = 7;
+            this.installedModsItem_TEMPLATE_ModID.Text = "Mod ID: 11111-AAAAA-BBBB";
+            this.installedModsItem_TEMPLATE_ModID.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // pictureBox1
+            // installedModsItem_TEMPLATE_ModVersion
             // 
-            this.pictureBox1.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.pictureBox1.ErrorImage = global::ModBotInstaller.Properties.Resources.NoImageAvailable;
-            this.pictureBox1.Image = global::ModBotInstaller.Properties.Resources.NoImageAvailable;
-            this.pictureBox1.InitialImage = global::ModBotInstaller.Properties.Resources.NoImageAvailable;
-            this.pictureBox1.Location = new System.Drawing.Point(3, 3);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(50, 50);
-            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.pictureBox1.TabIndex = 1;
-            this.pictureBox1.TabStop = false;
+            this.installedModsItem_TEMPLATE_ModVersion.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.installedModsItem_TEMPLATE_ModVersion.AutoSize = true;
+            this.installedModsItem_TEMPLATE_ModVersion.Font = new System.Drawing.Font("Consolas", 7F);
+            this.installedModsItem_TEMPLATE_ModVersion.ForeColor = System.Drawing.Color.White;
+            this.installedModsItem_TEMPLATE_ModVersion.Location = new System.Drawing.Point(3, 68);
+            this.installedModsItem_TEMPLATE_ModVersion.Name = "installedModsItem_TEMPLATE_ModVersion";
+            this.installedModsItem_TEMPLATE_ModVersion.Size = new System.Drawing.Size(100, 12);
+            this.installedModsItem_TEMPLATE_ModVersion.TabIndex = 6;
+            this.installedModsItem_TEMPLATE_ModVersion.Text = "Version: 1.55.7.0.4";
+            this.installedModsItem_TEMPLATE_ModVersion.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // label1
+            // installedModsItem_TEMPLATE_ModAuthor
             // 
-            this.label1.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Consolas", 10F, System.Drawing.FontStyle.Bold);
-            this.label1.ForeColor = System.Drawing.Color.White;
-            this.label1.Location = new System.Drawing.Point(58, -1);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(72, 17);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Mod name";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.label1.UseMnemonic = false;
+            this.installedModsItem_TEMPLATE_ModAuthor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.installedModsItem_TEMPLATE_ModAuthor.AutoSize = true;
+            this.installedModsItem_TEMPLATE_ModAuthor.Font = new System.Drawing.Font("Consolas", 7F);
+            this.installedModsItem_TEMPLATE_ModAuthor.ForeColor = System.Drawing.Color.White;
+            this.installedModsItem_TEMPLATE_ModAuthor.Location = new System.Drawing.Point(3, 56);
+            this.installedModsItem_TEMPLATE_ModAuthor.Name = "installedModsItem_TEMPLATE_ModAuthor";
+            this.installedModsItem_TEMPLATE_ModAuthor.Size = new System.Drawing.Size(120, 12);
+            this.installedModsItem_TEMPLATE_ModAuthor.TabIndex = 5;
+            this.installedModsItem_TEMPLATE_ModAuthor.Text = "By: Cool mod person man";
+            this.installedModsItem_TEMPLATE_ModAuthor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.installedModsItem_TEMPLATE_ModAuthor.UseMnemonic = false;
+            // 
+            // installedModsItem_TEMPLATE_SettingsIcon
+            // 
+            this.installedModsItem_TEMPLATE_SettingsIcon.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.installedModsItem_TEMPLATE_SettingsIcon.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.installedModsItem_TEMPLATE_SettingsIcon.ErrorImage = null;
+            this.installedModsItem_TEMPLATE_SettingsIcon.Image = global::ModBotInstaller.Properties.Resources.SettingsIcon;
+            this.installedModsItem_TEMPLATE_SettingsIcon.InitialImage = null;
+            this.installedModsItem_TEMPLATE_SettingsIcon.Location = new System.Drawing.Point(435, 3);
+            this.installedModsItem_TEMPLATE_SettingsIcon.Name = "installedModsItem_TEMPLATE_SettingsIcon";
+            this.installedModsItem_TEMPLATE_SettingsIcon.Size = new System.Drawing.Size(25, 25);
+            this.installedModsItem_TEMPLATE_SettingsIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.installedModsItem_TEMPLATE_SettingsIcon.TabIndex = 4;
+            this.installedModsItem_TEMPLATE_SettingsIcon.TabStop = false;
+            // 
+            // installedModsItem_TEMPLATE_ModDescription
+            // 
+            this.installedModsItem_TEMPLATE_ModDescription.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.installedModsItem_TEMPLATE_ModDescription.AutoEllipsis = true;
+            this.installedModsItem_TEMPLATE_ModDescription.Font = new System.Drawing.Font("Consolas", 6.5F);
+            this.installedModsItem_TEMPLATE_ModDescription.ForeColor = System.Drawing.Color.White;
+            this.installedModsItem_TEMPLATE_ModDescription.Location = new System.Drawing.Point(59, 23);
+            this.installedModsItem_TEMPLATE_ModDescription.Name = "installedModsItem_TEMPLATE_ModDescription";
+            this.installedModsItem_TEMPLATE_ModDescription.Size = new System.Drawing.Size(335, 30);
+            this.installedModsItem_TEMPLATE_ModDescription.TabIndex = 2;
+            this.installedModsItem_TEMPLATE_ModDescription.Text = resources.GetString("installedModsItem_TEMPLATE_ModDescription.Text");
+            this.installedModsItem_TEMPLATE_ModDescription.UseMnemonic = false;
+            // 
+            // installedModsItem_TEMPLATE_ModImage
+            // 
+            this.installedModsItem_TEMPLATE_ModImage.ErrorImage = global::ModBotInstaller.Properties.Resources.NoImageAvailable;
+            this.installedModsItem_TEMPLATE_ModImage.Image = global::ModBotInstaller.Properties.Resources.NoImageAvailable;
+            this.installedModsItem_TEMPLATE_ModImage.InitialImage = global::ModBotInstaller.Properties.Resources.NoImageAvailable;
+            this.installedModsItem_TEMPLATE_ModImage.Location = new System.Drawing.Point(3, 3);
+            this.installedModsItem_TEMPLATE_ModImage.Name = "installedModsItem_TEMPLATE_ModImage";
+            this.installedModsItem_TEMPLATE_ModImage.Size = new System.Drawing.Size(50, 50);
+            this.installedModsItem_TEMPLATE_ModImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.installedModsItem_TEMPLATE_ModImage.TabIndex = 1;
+            this.installedModsItem_TEMPLATE_ModImage.TabStop = false;
+            // 
+            // installedModsItem_TEMPLATE_ModName
+            // 
+            this.installedModsItem_TEMPLATE_ModName.AutoSize = true;
+            this.installedModsItem_TEMPLATE_ModName.Font = new System.Drawing.Font("Consolas", 10F, System.Drawing.FontStyle.Bold);
+            this.installedModsItem_TEMPLATE_ModName.ForeColor = System.Drawing.Color.White;
+            this.installedModsItem_TEMPLATE_ModName.Location = new System.Drawing.Point(58, 3);
+            this.installedModsItem_TEMPLATE_ModName.Name = "installedModsItem_TEMPLATE_ModName";
+            this.installedModsItem_TEMPLATE_ModName.Size = new System.Drawing.Size(72, 17);
+            this.installedModsItem_TEMPLATE_ModName.TabIndex = 0;
+            this.installedModsItem_TEMPLATE_ModName.Text = "Mod name";
+            this.installedModsItem_TEMPLATE_ModName.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.installedModsItem_TEMPLATE_ModName.UseMnemonic = false;
             // 
             // installedModsTitle
             // 
@@ -258,10 +315,6 @@ namespace ModBotInstaller
             this.installedModsTitle.TabIndex = 17;
             this.installedModsTitle.Text = "Installed mods:";
             this.installedModsTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // modSettingsIconHover
-            // 
-            this.modSettingsIconHover.ToolTipTitle = "Mod Settings";
             // 
             // modBotSettingsButton
             // 
@@ -282,25 +335,57 @@ namespace ModBotInstaller
             // installingModBotLabel
             // 
             this.installingModBotLabel.AutoSize = true;
+            this.installingModBotLabel.CausesValidation = false;
             this.installingModBotLabel.Font = new System.Drawing.Font("Consolas", 11F);
             this.installingModBotLabel.ForeColor = System.Drawing.Color.White;
-            this.installingModBotLabel.Location = new System.Drawing.Point(164, 369);
+            this.installingModBotLabel.Location = new System.Drawing.Point(164, 189);
             this.installingModBotLabel.Name = "installingModBotLabel";
             this.installingModBotLabel.Size = new System.Drawing.Size(176, 18);
             this.installingModBotLabel.TabIndex = 20;
             this.installingModBotLabel.Text = "Installing Mod-Bot...";
             this.installingModBotLabel.Visible = false;
             // 
+            // installedModsLoading
+            // 
+            this.installedModsLoading.AutoSize = true;
+            this.installedModsLoading.Font = new System.Drawing.Font("Consolas", 11F);
+            this.installedModsLoading.ForeColor = System.Drawing.Color.White;
+            this.installedModsLoading.Location = new System.Drawing.Point(194, 67);
+            this.installedModsLoading.Name = "installedModsLoading";
+            this.installedModsLoading.Size = new System.Drawing.Size(128, 18);
+            this.installedModsLoading.TabIndex = 21;
+            this.installedModsLoading.Text = "Loading mods...";
+            this.installedModsLoading.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.installedModsLoading.Visible = false;
+            // 
             // ProgressBar
             // 
             this.ProgressBar.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.ProgressBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(26)))), ((int)(((byte)(26)))));
             this.ProgressBar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(104)))), ((int)(((byte)(0)))));
-            this.ProgressBar.Location = new System.Drawing.Point(12, 396);
+            this.ProgressBar.Location = new System.Drawing.Point(12, 216);
             this.ProgressBar.Name = "ProgressBar";
+            this.ProgressBar.Progress = 0F;
             this.ProgressBar.Size = new System.Drawing.Size(493, 23);
             this.ProgressBar.TabIndex = 1;
             this.ProgressBar.Visible = false;
+            // 
+            // button1
+            // 
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.button1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(65)))), ((int)(((byte)(65)))), ((int)(((byte)(65)))));
+            this.button1.FlatAppearance.BorderSize = 0;
+            this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.button1.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button1.ForeColor = System.Drawing.Color.White;
+            this.button1.Location = new System.Drawing.Point(263, 451);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(242, 23);
+            this.button1.TabIndex = 22;
+            this.button1.Text = "Install all 8252 missing dependencies";
+            this.button1.UseMnemonic = false;
+            this.button1.UseVisualStyleBackColor = false;
+            this.button1.Visible = false;
             // 
             // Form2
             // 
@@ -309,6 +394,8 @@ namespace ModBotInstaller
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnablePreventFocusChange;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(22)))), ((int)(((byte)(22)))));
             this.ClientSize = new System.Drawing.Size(517, 486);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.installedModsLoading);
             this.Controls.Add(this.installingModBotLabel);
             this.Controls.Add(this.modBotSettingsButton);
             this.Controls.Add(this.installedModsTitle);
@@ -331,10 +418,10 @@ namespace ModBotInstaller
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form2_FormClosed);
             this.Load += new System.EventHandler(this.Form2_Load);
             this.installedModsView.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            this.installedModsItem_TEMPLATE.ResumeLayout(false);
+            this.installedModsItem_TEMPLATE.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.installedModsItem_TEMPLATE_SettingsIcon)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.installedModsItem_TEMPLATE_ModImage)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -350,15 +437,20 @@ namespace ModBotInstaller
 		private System.Windows.Forms.Button Reinstall;
         private System.Windows.Forms.FlowLayoutPanel installedModsView;
         private System.Windows.Forms.Label installedModsTitle;
-        private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.PictureBox pictureBox3;
-        private System.Windows.Forms.ToolTip modSettingsIconHover;
+        private System.Windows.Forms.Panel installedModsItem_TEMPLATE;
+        private System.Windows.Forms.Label installedModsItem_TEMPLATE_ModName;
+        private System.Windows.Forms.PictureBox installedModsItem_TEMPLATE_ModImage;
+        private System.Windows.Forms.Label installedModsItem_TEMPLATE_ModDescription;
+        private System.Windows.Forms.PictureBox installedModsItem_TEMPLATE_SettingsIcon;
         private System.Windows.Forms.Button modBotSettingsButton;
         private System.Windows.Forms.Label installingModBotLabel;
-        private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label installedModsItem_TEMPLATE_ModVersion;
+        private System.Windows.Forms.Label installedModsItem_TEMPLATE_ModAuthor;
+        private System.Windows.Forms.Label installedModsLoading;
+        private System.Windows.Forms.Label installedModsItem_TEMPLATE_ModID;
+        private System.Windows.Forms.Button installedModsItem_TEMPLATE_UpdateButton;
+        private NewProgressBar installedModsItem_TEMPLATE_UpdateProgressBar;
+        private System.Windows.Forms.Label installedModsItem_TEMPLATE_UpdateStatus;
+        private System.Windows.Forms.Button button1;
     }
 }

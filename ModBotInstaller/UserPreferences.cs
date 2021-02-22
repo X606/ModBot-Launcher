@@ -28,7 +28,7 @@ namespace ModBotInstaller
 
         #endregion
 
-        const ushort CURRENT_VERSION = 1;
+        const ushort CURRENT_VERSION = 2;
 
         public ushort Version;
         public string GameInstallationDirectory;

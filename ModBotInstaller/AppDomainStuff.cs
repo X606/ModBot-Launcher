@@ -10,10 +10,7 @@ public static class NewAppDomain
         {
             domain = AppDomain.CreateDomain("New App Domain: " + Guid.NewGuid());
 
-            var domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(
-                typeof(AppDomainDelegate).Assembly.FullName,
-                typeof(AppDomainDelegate).FullName);
-
+            AppDomainDelegate domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(typeof(AppDomainDelegate).Assembly.FullName, typeof(AppDomainDelegate).FullName);
             domainDelegate.Execute(action);
         }
         finally
@@ -31,10 +28,7 @@ public static class NewAppDomain
         {
             domain = AppDomain.CreateDomain("New App Domain: " + Guid.NewGuid());
 
-            var domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(
-                typeof(AppDomainDelegate).Assembly.FullName,
-                typeof(AppDomainDelegate).FullName);
-
+            AppDomainDelegate domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(typeof(AppDomainDelegate).Assembly.FullName, typeof(AppDomainDelegate).FullName);
             domainDelegate.Execute(parameter, action);
         }
         finally
@@ -51,10 +45,7 @@ public static class NewAppDomain
         {
             domain = AppDomain.CreateDomain("New App Domain: " + Guid.NewGuid());
 
-            var domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(
-                typeof(AppDomainDelegate).Assembly.FullName,
-                typeof(AppDomainDelegate).FullName);
-
+            AppDomainDelegate domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(typeof(AppDomainDelegate).Assembly.FullName, typeof(AppDomainDelegate).FullName);
             return domainDelegate.Execute(action);
         }
         finally
@@ -72,10 +63,7 @@ public static class NewAppDomain
         {
             domain = AppDomain.CreateDomain("New App Domain: " + Guid.NewGuid());
 
-            var domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(
-                typeof(AppDomainDelegate).Assembly.FullName,
-                typeof(AppDomainDelegate).FullName);
-
+            AppDomainDelegate domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(typeof(AppDomainDelegate).Assembly.FullName, typeof(AppDomainDelegate).FullName);
             return domainDelegate.Execute(parameter, action);
         }
         finally

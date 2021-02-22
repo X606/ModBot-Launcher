@@ -43,28 +43,13 @@ namespace ModBotInstaller
 
         void tryRequestModBotDownloadInfoFromServer()
         {
-            try
+            if (Utils.SendWebRequest(@"https://modbot.org/api?operation=getCurrentModBotVersion", out DownloadedData.LatestModBotVersion) &&
+                Utils.SendWebRequest(@"https://modbot.org/api?operation=getModBotDownload", out DownloadedData.ModBotDownloadLink))
             {
-                // throw new Exception(); // For testing handling server not responding
-
-                HttpWebRequest newestModBotVersionRequest = (HttpWebRequest)WebRequest.Create(@"https://modbot.org/api?operation=getCurrentModBotVersion");
-                newestModBotVersionRequest.Timeout = 1500;
-                HttpWebResponse newestModBotVersionResponse = (HttpWebResponse)newestModBotVersionRequest.GetResponse();
-                string newestModBotVersionContent = new StreamReader(newestModBotVersionResponse.GetResponseStream()).ReadToEnd();
-                DownloadedData.LatestModBotVersion = newestModBotVersionContent;
-
-                HttpWebRequest modBotDownloadLinkRequest = (HttpWebRequest)WebRequest.Create(@"https://modbot.org/api?operation=getModBotDownload");
-                modBotDownloadLinkRequest.Timeout = 1500;
-                HttpWebResponse modBotDownloadLinkResponse = (HttpWebResponse)modBotDownloadLinkRequest.GetResponse();
-                string modBotDownloadLink = new StreamReader(modBotDownloadLinkResponse.GetResponseStream()).ReadToEnd();
-                DownloadedData.ModBotDownloadLink = modBotDownloadLink;
-
                 DownloadedData.HasData = true;
             }
-            catch
+            else
             {
-                // TODO: Make the user able to continue without the server connection, since some lancher settings can still be changed further on, however, since Windows does not support custom text on buttons, this won't be very intuitive, so figure out a better way of doing this, maybe a custom error message window?
-
                 DialogResult dialogResult = MessageBox.Show("Unable to connect to the Mod-Bot server", "Connection failed", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button3);
 
                 if (dialogResult == DialogResult.Retry)
@@ -106,7 +91,8 @@ namespace ModBotInstaller
 
             UserPreferences.Current.MigrateFromOldSaveFormatsAndRemoveFiles();
 
-            if (validateCurrentInstallationDirectory())
+            bool gameInstallDirectoryValid = validateCurrentInstallationDirectory();
+            if (gameInstallDirectoryValid)
             {
                 if (UserPreferences.Current.DontShowFirstPage)
                     continueToNextWindow();
@@ -160,8 +146,10 @@ namespace ModBotInstaller
             {
                 if (Utils.IsValidCloneDroneInstallationDirectory(dialog.FileName))
                 {
-                    setPickerState(true);
                     UserPreferences.Current.GameInstallationDirectory = dialog.FileName;
+                    UserPreferences.Current.SaveToFile();
+
+                    setPickerState(true);
                 }
                 else
                 {
@@ -182,10 +170,10 @@ namespace ModBotInstaller
 
         void continueToNextWindow()
         {
+            UserPreferences.Current.SaveToFile();
+
             Form2 form = new Form2();
             form.Show();
-
-            UserPreferences.Current.SaveToFile();
 
             Close();
         }

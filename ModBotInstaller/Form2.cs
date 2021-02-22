@@ -1,10 +1,14 @@
 ﻿using ModBotInstaller.Properties;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Compression;
+using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ModBotInstaller
@@ -17,6 +21,13 @@ namespace ModBotInstaller
         }
 
         ModBotInstallationState _installationState;
+        
+        int _numCurrentlyLoadingModItems;
+        int _numCurrentlyUpdatingModItems;
+
+        List<InstalledModsPanelUIItem> _installedModsUIItems;
+
+        HashSet<string> _missingModDependencies;
 
         /*
         Constants in Windows API
@@ -99,22 +110,27 @@ namespace ModBotInstaller
                 case ModBotInstallationState.NotInstalled:
                     StatusLabel.Text = "Mod-Bot not installed";
                     StatusLabel.ForeColor = Color.FromArgb(252, 124, 0);
+                    InstallButton.Show();
                     InstallButton.Text = "Install Mod-Bot";
                     Reinstall.Hide();
                     break;
                 case ModBotInstallationState.OutOfDate:
                     StatusLabel.Text = "Mod-Bot out of date";
                     StatusLabel.ForeColor = Color.FromArgb(255, 255, 0);
+                    InstallButton.Show();
                     InstallButton.Text = "Update Mod-Bot";
                     Reinstall.Hide();
                     break;
                 case ModBotInstallationState.UpToDate:
+                    InstallButton.Show();
                     InstallButton.Text = "Start Game";
+                    Reinstall.Show();
                     Reinstall.Text = "Reinstall";
                     StatusLabel.Text = "Mod-Bot up to date!";
                     StatusLabel.ForeColor = Color.FromArgb(124, 252, 0);
                     break;
                 case ModBotInstallationState.BetaVersion:
+                    InstallButton.Show();
                     InstallButton.Text = "Start Game (beta)";
                     Reinstall.Text = "Reinstall stable";
                     StatusLabel.Text = "Mod-Bot beta installed";
@@ -123,6 +139,7 @@ namespace ModBotInstaller
                 case ModBotInstallationState.UnableToVerify:
                     StatusLabel.Text = "Unable to check latest Mod-Bot version";
                     StatusLabel.ForeColor = Color.FromArgb(125, 0, 125);
+                    InstallButton.Show();
                     InstallButton.Text = "Start Game";
                     Reinstall.Hide();
                     break;
@@ -133,6 +150,10 @@ namespace ModBotInstaller
                 InstallButton.Text = "Start (beta)";
                 Reinstall.Text = "Start (non beta)";
             }
+
+            InstallButton.Visible = _numCurrentlyLoadingModItems == 0 && _numCurrentlyUpdatingModItems == 0 && (_missingModDependencies == null || _missingModDependencies.Count == 0);
+            Reinstall.Visible = _numCurrentlyLoadingModItems == 0 && _numCurrentlyUpdatingModItems == 0 && (_missingModDependencies == null || _missingModDependencies.Count == 0);
+            installedModsLoading.Visible = _numCurrentlyLoadingModItems != 0;
         }
 
         void intitializeInstalledModsView()
@@ -143,8 +164,13 @@ namespace ModBotInstaller
             installedModsView.VerticalScroll.Visible = false;
             installedModsView.AutoScroll = true;
 
-            DirectoryInfo modsFolder = new DirectoryInfo(UserPreferences.Current.GameInstallationDirectory + "/mods");
+            _numCurrentlyLoadingModItems = 0;
+            _numCurrentlyUpdatingModItems = 0;
 
+            _installedModsUIItems = new List<InstalledModsPanelUIItem>();
+            _missingModDependencies = new HashSet<string>();
+
+            DirectoryInfo modsFolder = new DirectoryInfo(UserPreferences.Current.GameInstallationDirectory + "/mods");
             DirectoryInfo[] subDirectories = modsFolder.GetDirectories("*", SearchOption.TopDirectoryOnly);
 
             foreach (DirectoryInfo modDirectory in subDirectories)
@@ -152,121 +178,55 @@ namespace ModBotInstaller
                 FileInfo modInfoFile = Utils.GetFile(modDirectory.GetFiles(), "ModInfo.json");
                 if (modInfoFile != null)
                 {
-                    ModInfo modInfo = JsonConvert.DeserializeObject<ModInfo>(File.ReadAllText(modInfoFile.FullName));
-                    createModItemFor(modDirectory.FullName, modInfo);
+                    ModInfo modInfo;
+                    try
+                    {
+                        modInfo = JsonConvert.DeserializeObject<ModInfo>(File.ReadAllText(modInfoFile.FullName));
+                    }
+                    catch (JsonException) // If there was an error deserializing the ModInfo.json file, just skip it
+                    {
+                        MessageBox.Show("Error loading mod at path \"" + modDirectory.FullName + "\": Invalid ModInfo.json file. Please report this to the creator of said mod.", "Unable to load mod", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+                        continue;
+                    }
+
+                    modInfo.ModFolderPath = modDirectory.FullName;
+                    _installedModsUIItems.Add(new InstalledModsPanelUIItem(modInfo, installedModsView, this));
                 }
             }
+
+            foreach (InstalledModsPanelUIItem installedModUIItem in _installedModsUIItems)
+            {
+                if (!installedModUIItem.AreAllDependenciesInstalled(_installedModsUIItems, out List<string> missingMods) && missingMods != null)
+                {
+                    _missingModDependencies.IntersectWith(missingMods);
+                }
+            }
+
+            refreshItemsBasedOnCurrentState();
         }
 
-        void createModItemFor(string modFolderPath, ModInfo modInfo)
+        public void OnModStartedUpdating()
         {
-            Panel modPanel = new Panel
-            {
-                Size = new Size(465, 58),
-                BorderStyle = BorderStyle.FixedSingle,
-            };
+            _numCurrentlyUpdatingModItems++;
+            refreshItemsBasedOnCurrentState();
+        }
 
-            PictureBox modImage = new PictureBox
-            {
-                Parent = modPanel,
-                Location = new Point(3, 3),
-                Size = new Size(50, 50),
-                SizeMode = PictureBoxSizeMode.StretchImage,
-                Anchor = AnchorStyles.Left,
-                ErrorImage = Resources.NoImageAvailable,
-                InitialImage = Resources.NoImageAvailable,
-                Image = Resources.NoImageAvailable
-            };
+        public void OnModFinishedUpdating()
+        {
+            _numCurrentlyUpdatingModItems--;
+            refreshItemsBasedOnCurrentState();
+        }
 
-            if (!string.IsNullOrWhiteSpace(modInfo.ImageFileName))
-            {
-                string imageFilePath = modFolderPath + "/" + modInfo.ImageFileName;
+        public void OnModStartedLoading()
+        {
+            _numCurrentlyLoadingModItems++;
+            refreshItemsBasedOnCurrentState();
+        }
 
-                try
-                {
-                    modImage.Image = Image.FromFile(imageFilePath);
-                }
-                catch // If there is any unexpexted error loading the file, default to the "No Image Available" image
-                {
-                }
-            }
-
-            Label modNameLabel = new Label
-            {
-                Parent = modPanel,
-                Location = new Point(57, 0),
-                Anchor = AnchorStyles.Left,
-                AutoSize = true,
-                UseMnemonic = false,
-                Font = new Font("Consolas", 10f, FontStyle.Bold),
-                ForeColor = Color.White,
-                Text = modInfo.DisplayName,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-
-            Label modDescriptionLabel = new Label
-            {
-                Parent = modPanel,
-                Location = new Point(59, 17),
-                AutoSize = false,
-                Size = new Size(256, 36),
-                Anchor = AnchorStyles.Bottom,
-                UseMnemonic = false,
-                AutoEllipsis = true,
-                Font = new Font("Consolas", 7f),
-                ForeColor = Color.White,
-                TextAlign = ContentAlignment.TopLeft,
-                Text = modInfo.Description
-            };
-
-            Label modVersionLabel = new Label
-            {
-                Text = "Version: " + modInfo.Version,
-                Parent = modPanel,
-                AutoSize = true,
-                Location = new Point(321, 33),
-                UseMnemonic = false,
-                Font = new Font("Consolas", 6.5f),
-                ForeColor = Color.White,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-
-            Label modAuthorLabel = new Label
-            {
-                Text = "By: " + modInfo.Author,
-                Parent = modPanel,
-                Location = new Point(321, 42),
-                AutoSize = true,
-                UseMnemonic = false,
-                Font = new Font("Consolas", 6.5f),
-                ForeColor = Color.White,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-
-            PictureBox settingsIcon = new PictureBox
-            {
-                Parent = modPanel,
-                Location = new Point(435, 3),
-                Size = new Size(25, 25),
-                SizeMode = PictureBoxSizeMode.StretchImage,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Image = Resources.SettingsIcon
-            };
-
-            ToolTip settingsIconTooltip = new ToolTip();
-            settingsIconTooltip.SetToolTip(settingsIcon, "Mod settings for " + modInfo.DisplayName);
-
-            // If we couldn't download any data, either the Mod-Bot servers are down, or we don't have an internet connection,
-            // either way, we shouldn't try to compare versions if we couldn't connect earlier.
-            if (DownloadedData.HasData)
-            {
-                new Thread(delegate ()
-                {
-
-                }).Start();
-            }
-
-            installedModsView.Controls.Add(modPanel);
+        public void OnModFinishedLoading()
+        {
+            _numCurrentlyLoadingModItems--;
+            refreshItemsBasedOnCurrentState();
         }
 
         private void CloseButton_Click(object sender, EventArgs e)
@@ -294,11 +254,9 @@ namespace ModBotInstaller
             Close();
         }
 
-
-        public void StartGameAndExit()
+        public static void StartGameAndExit()
         {
             Process.Start("steam://rungameid/597170");
-
             Application.Exit();
         }
 
@@ -348,8 +306,10 @@ namespace ModBotInstaller
 
         private void modBotSettingsButton_Click(object sender, EventArgs e)
         {
-            SettingsWindow settingsWindow = new SettingsWindow();
-            settingsWindow.Owner = this;
+            SettingsWindow settingsWindow = new SettingsWindow
+            {
+                Owner = this
+            };
 
             settingsWindow.ShowDialog();
 

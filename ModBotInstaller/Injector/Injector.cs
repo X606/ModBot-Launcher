@@ -123,13 +123,17 @@ namespace ModBotInstaller.Injector
             Console.WriteLine("Overwrote method \"" + pasteClassName + "." + pasteMethodName + "\" with \"" + copyClassName + "." + copyMethodName + "\"!");
         }
 
-        public static void AddMethodToClass(string pathToWriteTo, string classToWriteTo, string newMethodName, string pathToCopyFrom, string classToCopyFrom, string methodToCopyFrom)
+        public static void AddMethodToClass(string pathToWriteTo, string classToWriteTo, string newMethodName, string pathToCopyFrom, string classToCopyFrom, string methodToCopyFrom, Action<float> updateProgressCallback)
         {
+            updateProgressCallback(0f);
+
             HalfInjected copy = InjectionFirstStep(pathToCopyFrom, classToCopyFrom, methodToCopyFrom, " copy: ");
 
             if (!File.Exists(pathToWriteTo))
             {
                 Console.WriteLine("paste: Could not find Assembly-CSharp.dll at path \"" + pathToWriteTo + "\"");
+
+                updateProgressCallback(1f);
                 return;
             }
             ModuleDefinition writeModule = ModuleDefinition.ReadModule(pathToWriteTo, new ReaderParameters()
@@ -137,11 +141,15 @@ namespace ModBotInstaller.Injector
                 ReadWrite = true
             });
 
+            updateProgressCallback(0.1f);
+
             TypeDefinition typeToWriteTo = writeModule.GetType(classToWriteTo);
             if (typeToWriteTo == null)
             {
                 copy.Module.Dispose();
                 Console.WriteLine("Write: Could not find class \"" + classToWriteTo + "\"");
+
+                updateProgressCallback(1f);
                 return;
             }
             if (typeToWriteTo.Methods.Where(a => a.Name == newMethodName).Count() >= 1)
@@ -149,6 +157,8 @@ namespace ModBotInstaller.Injector
                 copy.Module.Dispose();
                 writeModule.Dispose();
                 Console.WriteLine("Method \"" + newMethodName + "\" already exists, skipping!");
+
+                updateProgressCallback(1f);
                 return;
             }
 
@@ -162,6 +172,8 @@ namespace ModBotInstaller.Injector
                 newMethod.Parameters.Add(copy.TargetMethod.Parameters[i]);
             }
 
+            updateProgressCallback(0.2f);
+
             List<AssemblyNameReference> differance = Util.GetDifferenceBetweenLists(copy.Module.AssemblyReferences.ToList(), writeModule.AssemblyReferences.ToList());
             Console.WriteLine("Adding references to assemblies:");
             for (int i = 0; i < differance.Count; i++)
@@ -174,14 +186,27 @@ namespace ModBotInstaller.Injector
 
             typeToWriteTo.Methods.Add(newMethod);
 
+            updateProgressCallback(0.4f);
+
             writeModule.Write();
+
+            updateProgressCallback(0.6f);
+
             writeModule.Dispose();
+
+            updateProgressCallback(0.8f);
+
             copy.Module.Dispose();
+
             Console.WriteLine("Added method \"" + classToWriteTo + "." + newMethodName + "\" from \"" + classToCopyFrom + "." + methodToCopyFrom + "\"");
+
+            updateProgressCallback(1f);
         }
 
-        public static void AddFieldToClass(string pathToWriteTo, string classToWriteTo, string newFieldName, string pathToCopyFrom, string classToCopyFrom, string fieldToCopyFrom)
+        public static void AddFieldToClass(string pathToWriteTo, string classToWriteTo, string newFieldName, string pathToCopyFrom, string classToCopyFrom, string fieldToCopyFrom, Action<float> updateProgressCallback)
         {
+            updateProgressCallback(0f);
+
             #region write
             if (!File.Exists(pathToWriteTo))
             {
@@ -201,6 +226,9 @@ namespace ModBotInstaller.Injector
                 return;
             }
             #endregion
+
+            updateProgressCallback(0.1f);
+
             #region copy
             if (!File.Exists(pathToCopyFrom))
             {
@@ -231,11 +259,10 @@ namespace ModBotInstaller.Injector
             }
             #endregion
 
+            updateProgressCallback(0.2f);
 
             TypeReference fieldType = writeModule.ImportReference(copyField.FieldType);
             FieldDefinition newField = new FieldDefinition(copyField.Name, copyField.Attributes, fieldType);
-
-
 
             newField.CustomAttributes.Clear();
             for (int i = 0; i < copyField.CustomAttributes.Count; i++)
@@ -246,18 +273,32 @@ namespace ModBotInstaller.Injector
 
             writeType.Fields.Add(newField);
 
+            updateProgressCallback(0.3f);
 
             writeModule.Write();
+
+            updateProgressCallback(0.6f);
+            
             writeModule.Dispose();
+
+            updateProgressCallback(0.8f);
+
             CopyModule.Dispose();
+
+            updateProgressCallback(1f);
+
             Console.WriteLine("Added field \"" + classToWriteTo + "." + newFieldName + "\" from \"" + classToCopyFrom + "." + fieldToCopyFrom + "\"");
         }
 
-        public static void AddClassToAssembly(string pathToAssembly, string newClassName, string pathToCopyAssembly, string classToCopyFullName)
+        public static void AddClassToAssembly(string pathToAssembly, string newClassName, string pathToCopyAssembly, string classToCopyFullName, Action<float> updateProgressCallback)
         {
+            updateProgressCallback(0f);
+
             if (!File.Exists(pathToAssembly))
             {
                 Console.WriteLine("Write: Could not find Assembly-CSharp.dll at path \"" + pathToAssembly + "\"");
+
+                updateProgressCallback(1f);
                 return;
             }
             ModuleDefinition writeModule = ModuleDefinition.ReadModule(pathToAssembly, new ReaderParameters()
@@ -265,16 +306,23 @@ namespace ModBotInstaller.Injector
                 ReadWrite = true
             });
 
+            updateProgressCallback(0.1f);
+
             if (!File.Exists(pathToCopyAssembly))
             {
                 Console.WriteLine("Copy: Could not find Assembly-CSharp.dll at path \"" + pathToCopyAssembly + "\"");
                 writeModule.Dispose();
+
+                updateProgressCallback(1f);
                 return;
             }
             ModuleDefinition copyModule = ModuleDefinition.ReadModule(pathToCopyAssembly, new ReaderParameters()
             {
                 ReadWrite = true
             });
+            
+            updateProgressCallback(0.2f);
+
             TypeDefinition copyType = copyModule.GetType(classToCopyFullName);
             if (copyType == null)
             {
@@ -282,6 +330,8 @@ namespace ModBotInstaller.Injector
                 writeModule.Dispose();
 
                 Console.WriteLine("Copy: Could not find class \"" + classToCopyFullName + "\"");
+
+                updateProgressCallback(1f);
                 return;
             }
             if (writeModule.GetType(newClassName) != null)
@@ -289,9 +339,12 @@ namespace ModBotInstaller.Injector
                 Console.WriteLine("Module already had class \"" + newClassName + "\", skipping...");
                 copyModule.Dispose();
                 writeModule.Dispose();
+
+                updateProgressCallback(1f);
                 return;
             }
 
+            updateProgressCallback(0.3f);
 
             TypeReference baseTypeReference = null;
             if (copyType.BaseType != null)
@@ -309,23 +362,66 @@ namespace ModBotInstaller.Injector
 
             writeModule.Types.Add(newType);
 
+            updateProgressCallback(0.4f);
+
             writeModule.Write();
+
+            updateProgressCallback(0.5f);
+
             writeModule.Dispose();
+
+            updateProgressCallback(0.55f);
+
             copyModule.Dispose();
 
             Console.WriteLine("Added Class Type \"" + newClassName + "\" from \"" + classToCopyFullName + "\"");
 
+            const float ADDING_FIELDS_PERCENTAGE_TO_NEXT_STEP = 0.1f; // Just to make the code a bit clearer, this is how much progress that should be added to the bar during the course of the for-loop
+            const float ADDING_FIELDS_START_PERCENTAGE = 0.55f; // Just to make the code a bit clearer, this is the starting percentage going into the for-loop
+
             Console.WriteLine("Adding fields...");
             for (int i = 0; i < fields.Length; i++)
             {
-                AddFieldToClass(pathToAssembly, newClassName, fields[i].Name, pathToCopyAssembly, classToCopyFullName, fields[i].Name);
+                float startPercentage = ADDING_FIELDS_START_PERCENTAGE + (ADDING_FIELDS_PERCENTAGE_TO_NEXT_STEP * (i / (float)fields.Length));
+                float endPercentage = startPercentage + (ADDING_FIELDS_PERCENTAGE_TO_NEXT_STEP / fields.Length);
+
+                updateProgressCallback(startPercentage);
+
+                AddFieldToClass(pathToAssembly, newClassName, fields[i].Name, pathToCopyAssembly, classToCopyFullName, fields[i].Name, delegate (float progress)
+                {
+                    // progress is a value between 0.0f and 1.0f, we basically just want to lerp between startPercentage and endPercentage
+                    updateProgressCallback(Utils.Lerp(startPercentage, endPercentage, progress));
+                });
+
+                updateProgressCallback(endPercentage);
             }
+
+            updateProgressCallback(ADDING_FIELDS_START_PERCENTAGE + ADDING_FIELDS_PERCENTAGE_TO_NEXT_STEP); // 0.65
+
             Console.WriteLine("Done!");
+
+            const float ADDING_METHODS_PERCENTAGE_TO_NEXT_STEP = 0.1f; // Just to make the code a bit clearer, this is how much progress that should be added to the bar during the course of the for-loop
+            const float ADDING_METHODS_START_PERCENTAGE = ADDING_FIELDS_START_PERCENTAGE + ADDING_FIELDS_PERCENTAGE_TO_NEXT_STEP; // Just to make the code a bit clearer, this is the starting percentage going into the for-loop
+
             Console.WriteLine("Adding methods...");
             for (int i = 0; i < methods.Length; i++)
             {
-                AddMethodToClass(pathToAssembly, newClassName, methods[i].Name, pathToCopyAssembly, classToCopyFullName, methods[i].Name);
+                float startPercentage = ADDING_METHODS_START_PERCENTAGE + (ADDING_METHODS_PERCENTAGE_TO_NEXT_STEP * (i / (float)methods.Length));
+                float endPercentage = startPercentage + (ADDING_METHODS_PERCENTAGE_TO_NEXT_STEP / methods.Length);
+
+                updateProgressCallback(startPercentage);
+
+                AddMethodToClass(pathToAssembly, newClassName, methods[i].Name, pathToCopyAssembly, classToCopyFullName, methods[i].Name, delegate (float progress)
+                {
+                    // progress is a value between 0.0f and 1.0f, we basically just want to lerp between startPercentage and endPercentage
+                    updateProgressCallback(Utils.Lerp(startPercentage, endPercentage, progress));
+                });
+
+                updateProgressCallback(endPercentage);
             }
+
+            updateProgressCallback(ADDING_METHODS_START_PERCENTAGE + ADDING_METHODS_PERCENTAGE_TO_NEXT_STEP); // 0.75
+
             Console.WriteLine("Done!");
             Console.WriteLine("Fixing method references...");
 
@@ -344,6 +440,8 @@ namespace ModBotInstaller.Injector
             if (writeMethods.Length != copyMethods.Length)
             {
                 ErrorHandler.Crash("The number of methods did not match");
+
+                updateProgressCallback(1f);
                 return;
             }
             for (int i = 0; i < writeMethods.Length; i++)
@@ -351,11 +449,21 @@ namespace ModBotInstaller.Injector
                 FixMethodReferences(writeMethods[i], copyMethods[i]);
             }
 
+            updateProgressCallback(0.8f);
+
             writeSecondTimeModule.Write();
+
+            updateProgressCallback(0.9f);
+
             writeSecondTimeModule.Dispose();
+
+            updateProgressCallback(0.95f);
+
             copySecondTimeModule.Dispose();
             Console.WriteLine("Done!");
             Console.WriteLine("Successfully added all members of class \"" + newClassName + "\" from \"" + classToCopyFullName + "\"");
+
+            updateProgressCallback(1f);
         }
 
         private static void OverwriteMethodIL(MethodDefinition pasteMethod, MethodDefinition copyMethod, string pasteClassName, string pasteMethodName, ModuleDefinition pasteModule, TypeDefinition newClass = null)
