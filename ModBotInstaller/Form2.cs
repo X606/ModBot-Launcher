@@ -20,12 +20,17 @@ namespace ModBotInstaller
             InitializeComponent();
         }
 
+        bool _hasInitializedInstalledModsView = false;
+
         ModBotInstallationState _installationState;
         
         int _numCurrentlyLoadingModItems;
         int _numCurrentlyUpdatingModItems;
 
+        bool _isLoadingFirebaseModData;
+
         List<InstalledModsPanelUIItem> _installedModsUIItems;
+        List<InstalledModsPanelUIItem_Non2_0> _installedModsUIItems_Non2_0;
 
         HashSet<string> _missingModDependencies;
 
@@ -72,7 +77,7 @@ namespace ModBotInstaller
                     if (dialogResult == DialogResult.Cancel)
                     {
                         // End current process
-                        Process.GetCurrentProcess().Kill();
+                        Utils.EndProcess();
                         return;
                     }
                     // If the selected option is not Cancel, we should try again
@@ -99,8 +104,6 @@ namespace ModBotInstaller
             {
                 LatestVersionLabel.Visible = false;
             }
-
-            intitializeInstalledModsView();
         }
 
         void refreshItemsBasedOnCurrentState()
@@ -151,12 +154,15 @@ namespace ModBotInstaller
                 Reinstall.Text = "Start (non beta)";
             }
 
-            InstallButton.Visible = _numCurrentlyLoadingModItems == 0 && _numCurrentlyUpdatingModItems == 0 && (_missingModDependencies == null || _missingModDependencies.Count == 0);
-            Reinstall.Visible = _numCurrentlyLoadingModItems == 0 && _numCurrentlyUpdatingModItems == 0 && (_missingModDependencies == null || _missingModDependencies.Count == 0);
-            installedModsLoading.Visible = _numCurrentlyLoadingModItems != 0;
+            InstallButton.Visible = _numCurrentlyLoadingModItems == 0 && _numCurrentlyUpdatingModItems == 0 && (_missingModDependencies == null || _missingModDependencies.Count == 0) && !_isLoadingFirebaseModData;
+            Reinstall.Visible = _numCurrentlyLoadingModItems == 0 && _numCurrentlyUpdatingModItems == 0 && (_missingModDependencies == null || _missingModDependencies.Count == 0) && !_isLoadingFirebaseModData;
+            installedModsLoading.Visible = _numCurrentlyLoadingModItems > 0 || _isLoadingFirebaseModData;
+
+            if (!_hasInitializedInstalledModsView && _installationState != ModBotInstallationState.Failed && _installationState != ModBotInstallationState.NotInstalled)
+                initializeInstalledModsView();
         }
 
-        void intitializeInstalledModsView()
+        void initializeInstalledModsView()
         {
             // I have no clue why, but for some ungodly reason this is what you have to do to disable the HORIZONTAL scroll slider....
             installedModsView.AutoScroll = false;
@@ -167,42 +173,64 @@ namespace ModBotInstaller
             _numCurrentlyLoadingModItems = 0;
             _numCurrentlyUpdatingModItems = 0;
 
-            _installedModsUIItems = new List<InstalledModsPanelUIItem>();
-            _missingModDependencies = new HashSet<string>();
+            _hasInitializedInstalledModsView = true;
 
             DirectoryInfo modsFolder = new DirectoryInfo(UserPreferences.Current.GameInstallationDirectory + "/mods");
-            DirectoryInfo[] subDirectories = modsFolder.GetDirectories("*", SearchOption.TopDirectoryOnly);
-
-            foreach (DirectoryInfo modDirectory in subDirectories)
+            if (Constants.IS_MODBOT_2_0)
             {
-                FileInfo modInfoFile = Utils.GetFile(modDirectory.GetFiles(), "ModInfo.json");
-                if (modInfoFile != null)
-                {
-                    ModInfo modInfo;
-                    try
-                    {
-                        modInfo = JsonConvert.DeserializeObject<ModInfo>(File.ReadAllText(modInfoFile.FullName));
-                    }
-                    catch (JsonException) // If there was an error deserializing the ModInfo.json file, just skip it
-                    {
-                        MessageBox.Show("Error loading mod at path \"" + modDirectory.FullName + "\": Invalid ModInfo.json file. Please report this to the creator of said mod.", "Unable to load mod", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
-                        continue;
-                    }
+                _installedModsUIItems = new List<InstalledModsPanelUIItem>();
+                _missingModDependencies = new HashSet<string>();
 
-                    modInfo.ModFolderPath = modDirectory.FullName;
-                    _installedModsUIItems.Add(new InstalledModsPanelUIItem(modInfo, installedModsView, this));
+                DirectoryInfo[] subDirectories = modsFolder.GetDirectories();
+
+                foreach (DirectoryInfo modDirectory in subDirectories)
+                {
+                    FileInfo modInfoFile = modDirectory.FindFile("ModInfo.json");
+                    if (modInfoFile != null)
+                    {
+                        ModInfo modInfo;
+                        try
+                        {
+                            modInfo = JsonConvert.DeserializeObject<ModInfo>(File.ReadAllText(modInfoFile.FullName));
+                        }
+                        catch (JsonException) // If there was an error deserializing the ModInfo.json file, just skip it
+                        {
+                            MessageBox.Show("Error loading mod at path \"" + modDirectory.FullName + "\": Invalid ModInfo.json file. Please report this to the creator of said mod.", "Unable to load mod", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+                            continue;
+                        }
+
+                        modInfo.ModFolderPath = modDirectory.FullName;
+                        _installedModsUIItems.Add(new InstalledModsPanelUIItem(modInfo, installedModsView, this));
+                    }
+                }
+
+                foreach (InstalledModsPanelUIItem installedModUIItem in _installedModsUIItems)
+                {
+                    if (!installedModUIItem.AreAllDependenciesInstalled(_installedModsUIItems, out List<string> missingMods) && missingMods != null)
+                    {
+                        _missingModDependencies.IntersectWith(missingMods);
+                    }
                 }
             }
-
-            foreach (InstalledModsPanelUIItem installedModUIItem in _installedModsUIItems)
+            else
             {
-                if (!installedModUIItem.AreAllDependenciesInstalled(_installedModsUIItems, out List<string> missingMods) && missingMods != null)
+                _installedModsUIItems_Non2_0 = new List<InstalledModsPanelUIItem_Non2_0>();
+
+                FileInfo[] dllFiles = modsFolder.GetFiles("*.dll", SearchOption.TopDirectoryOnly);
+                foreach (FileInfo modFile in dllFiles)
                 {
-                    _missingModDependencies.IntersectWith(missingMods);
+                    _installedModsUIItems_Non2_0.Add(new InstalledModsPanelUIItem_Non2_0(modFile, installedModsView, this));
                 }
+
+                InstalledModsPanelUIItem_Non2_0.DownloadFirebaseModData(this);
             }
 
             refreshItemsBasedOnCurrentState();
+        }
+
+        public void OnModLoadingFailed(string message)
+        {
+            MessageBox.Show(message, "Error loading mod", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         public void OnModStartedUpdating()
@@ -226,6 +254,12 @@ namespace ModBotInstaller
         public void OnModFinishedLoading()
         {
             _numCurrentlyLoadingModItems--;
+            refreshItemsBasedOnCurrentState();
+        }
+
+        public void SetFirebaseModDataLoading(bool isLoading)
+        {
+            _isLoadingFirebaseModData = isLoading;
             refreshItemsBasedOnCurrentState();
         }
 
@@ -256,7 +290,7 @@ namespace ModBotInstaller
 
         public static void StartGameAndExit()
         {
-            Process.Start("steam://rungameid/597170");
+            Process.Start("steam://rungameid/" + Constants.CLONE_DRONE_STEAMAPPID); // Start Clone Drone via Steam
             Application.Exit();
         }
 

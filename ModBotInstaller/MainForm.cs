@@ -63,7 +63,7 @@ namespace ModBotInstaller
                     DownloadedData.ModBotDownloadLink = null;
                     DownloadedData.HasData = false;
                 }
-                else
+                else if (dialogResult == DialogResult.Abort)
                 {
                     Process.GetCurrentProcess().Kill();
                     return;
@@ -91,12 +91,26 @@ namespace ModBotInstaller
 
             UserPreferences.Current.MigrateFromOldSaveFormatsAndRemoveFiles();
 
-            bool gameInstallDirectoryValid = validateCurrentInstallationDirectory();
-            if (gameInstallDirectoryValid)
+            if (tryGetValidGameInstallDirectory())
             {
                 if (UserPreferences.Current.DontShowFirstPage)
                     continueToNextWindow();
             }
+        }
+
+        bool tryGetValidGameInstallDirectory()
+        {
+            if (validateCurrentInstallationDirectory())
+                return true;
+
+            string installDirectory = Utils.FindGameInstallDirectoryFromSteam();
+            if (Utils.IsValidCloneDroneInstallationDirectory(installDirectory))
+            {
+                UserPreferences.Current.GameInstallationDirectory = installDirectory;
+                return true;
+            }
+
+            return false;
         }
 
         bool validateCurrentInstallationDirectory(bool refreshState = true)

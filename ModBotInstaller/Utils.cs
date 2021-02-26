@@ -1,10 +1,15 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using ModBotInstaller.AcfParsing;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -22,15 +27,15 @@ namespace ModBotInstaller
         {
             DirectoryInfo directory = new DirectoryInfo(path);
 
-            DirectoryInfo dataDirectory = GetDirectory(directory.GetDirectories(), "Clone Drone in the Danger Zone_Data");
+            DirectoryInfo dataDirectory = directory.FindSubDirectory("Clone Drone in the Danger Zone_Data");
             if (dataDirectory == null)
                 return false;
 
-            DirectoryInfo managedDirectory = GetDirectory(dataDirectory.GetDirectories(), "Managed");
+            DirectoryInfo managedDirectory = dataDirectory.FindSubDirectory("Managed");
             if (managedDirectory == null)
                 return false;
 
-            FileInfo assembly = GetFile(managedDirectory.GetFiles(), "Assembly-CSharp.dll");
+            FileInfo assembly = managedDirectory.FindFile("Assembly-CSharp.dll");
             if (assembly == null)
                 return false;
 
@@ -46,30 +51,31 @@ namespace ModBotInstaller
             if (directory == null)
                 return false;
 
-            DirectoryInfo dataDirectory = GetDirectory(directory.GetDirectories(), "Clone Drone in the Danger Zone_Data");
+            DirectoryInfo dataDirectory = directory.FindSubDirectory("Clone Drone in the Danger Zone_Data");
             if (dataDirectory == null)
                 return false;
 
-            DirectoryInfo managedDirectory = GetDirectory(dataDirectory.GetDirectories(), "Managed");
+            DirectoryInfo managedDirectory = dataDirectory.FindSubDirectory("Managed");
             if (managedDirectory == null)
                 return false;
 
-            FileInfo assembly = GetFile(managedDirectory.GetFiles(), "ModLibrary.dll");
+            FileInfo assembly = managedDirectory.FindFile("ModLibrary.dll");
             if (assembly == null)
                 return false;
 
             return true;
         }
 
-        public static DirectoryInfo GetDirectory(DirectoryInfo[] infos, string name)
+        public static DirectoryInfo FindSubDirectory(this DirectoryInfo directoryInfo, string name, SearchOption mode = SearchOption.TopDirectoryOnly)
         {
-            for (int i = 0; i < infos.Length; i++)
-            {
-                if (infos[i].Name == name)
-                    return infos[i];
-            }
+            DirectoryInfo[] subDirectories = directoryInfo.GetDirectories("*", mode);
+            return subDirectories.FirstOrDefault((DirectoryInfo subDir) => subDir.Name == name);
+        }
 
-            return null;
+        public static FileInfo FindFile(this DirectoryInfo directoryInfo, string name, SearchOption mode = SearchOption.TopDirectoryOnly)
+        {
+            FileInfo[] files = directoryInfo.GetFiles("*", mode);
+            return files.FirstOrDefault((FileInfo file) => file.Name == name);
         }
 
         public static FileInfo GetFile(FileInfo[] infos, string name)
@@ -93,7 +99,7 @@ namespace ModBotInstaller
 
                 return stream;
             }
-            catch (WebException)
+            catch (HttpRequestException)
             {
                 return null;
             }
@@ -170,7 +176,7 @@ namespace ModBotInstaller
             for (int i = str.Length - 1; i >= 0; i--)
             {
                 if (chars.Contains(str[i]))
-                    str.Remove(i, 1);
+                    str = str.Remove(i, 1);
             }
 
             return str;
@@ -178,18 +184,113 @@ namespace ModBotInstaller
 
         public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
-            using (Stream destination = File.Open(destinationFileName, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (FileStream destination = File.Create(destinationFileName, 4096, FileOptions.Asynchronous))
             {
                 using (Stream zipEntryStream = source.Open())
                 {
-                    await zipEntryStream.CopyToAsync(destination);
+                    await TryExtractFileAsync(zipEntryStream, destination);
                 }
+            }
+        }
+
+        public static async Task TryExtractFileAsync(Stream zipStream, FileStream destination)
+        {
+            try
+            {
+                await zipStream.CopyToAsync(destination);
+            }
+            catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x00000070) // ERROR_DISK_FULL
+            {
+                MessageBox.Show("There is not enough disk space to extract files, clear up some space and try again", "Unable to extract files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await TryExtractFileAsync(zipStream, destination); // Try extracting the file again
+            }
+            catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x00000020) // ERROR_SHARING_VIOLATION
+            {
+                MessageBox.Show("Source or destination files are open in another program, please close them and try again", "Unable to extract files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await TryExtractFileAsync(zipStream, destination); // Try extracting the file again
+            }
+            catch (SecurityException)
+            {
+                MessageBox.Show("Installer is not authorized to access files for extracting, please make sure all files have the correct permissions and try again", "Unable to extract files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await TryExtractFileAsync(zipStream, destination); // Try extracting the file again
+            }
+            catch (UnauthorizedAccessException)
+            {
+                MessageBox.Show("Installer is not authorized to access files for extracting, please make sure all files have the correct permissions and try again", "Unable to extract files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await TryExtractFileAsync(zipStream, destination); // Try extracting the file again
+            }
+            catch (Exception e) // Any other error type
+            {
+                MessageBox.Show("An error uccured while extracting files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to extract files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                EndProcess();
+            }
+        }
+
+        public static void MoveAllPersistentFoldersTo(string sourceRootPath, string destinationRootPath, PersistentFolderData[] persistentFoldersData)
+        {
+            TryDeleteDirectory(destinationRootPath, true);
+            Directory.CreateDirectory(destinationRootPath);
+
+            foreach (PersistentFolderData persistentFolder in persistentFoldersData)
+            {
+                string sourceFolderPath = Path.Combine(sourceRootPath, persistentFolder.FolderName);
+
+                string destinationFolderName = StripAllInvalidPathCharacters(persistentFolder.GUID);
+                if (string.IsNullOrEmpty(destinationFolderName))
+                    destinationFolderName = Path.GetRandomFileName();
+
+                string destinationFolderPath = Path.Combine(destinationRootPath, destinationFolderName);
+                if (Directory.Exists(sourceFolderPath))
+                {
+                    TryMoveDirectory(sourceFolderPath, destinationFolderPath);
+                }
+                else
+                {
+                    Directory.CreateDirectory(destinationFolderPath);
+                }
+            }
+        }
+
+        public static void TryMoveDirectory(string sourceDir, string destinationDir)
+        {
+            try
+            {
+                Directory.Move(sourceDir, destinationDir);
+            }
+            catch (IOException io) when (((io.HResult & 0x0000FFFF) == 0x000004C8) || ((io.HResult & 0x0000FFFF) == 0x00000020)) // ERROR_USER_MAPPED_FILE or ERROR_SHARING_VIOLATION
+            {
+                DialogResult dialogResult = MessageBox.Show("Source or destination files are open in another program, please close any programs that are using Clone Drone's files and try again.", "Unable to move files", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+
+                if (dialogResult == DialogResult.Retry)
+                {
+                    TryMoveDirectory(sourceDir, destinationDir);
+                }
+                else if (dialogResult == DialogResult.Cancel)
+                {
+                    EndProcess();
+                }
+            }
+            catch (IOException io) when (((io.HResult & 0x0000FFFF) == 0x000000E1) || ((io.HResult & 0x0000FFFF) == 0x000000E2)) // ERROR_VIRUS_INFECTED or ERROR_VIRUS_DELETED
+            {
+                // This will pretty much only happen if Windows Defender stops the installer from accessing the old Injector.exe file, since it may still exist. But, we don't want to do anything with it anyway, so we just ignore the exception, and in turn, skip moving the file.
+            }
+            catch (Exception e) when ((e is SecurityException) || (e is UnauthorizedAccessException))
+            {
+                DialogResult dialogResult = MessageBox.Show("Installer is not authorized to access files for moving, please make sure all files have the correct permissions and try again", "Unable to move files", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+
+                if (dialogResult == DialogResult.Retry)
+                {
+                    TryMoveDirectory(sourceDir, destinationDir);
+                }
+                else if (dialogResult == DialogResult.Cancel)
+                {
+                    EndProcess();
+                }
+            }
+            catch (Exception e) // Any other error type
+            {
+                MessageBox.Show("An error uccured while moving files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to move files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                EndProcess();
             }
         }
 
@@ -199,7 +300,9 @@ namespace ModBotInstaller
             DirectoryInfo sourceDirectory = new DirectoryInfo(sourceDirPath);
 
             if (!sourceDirectory.Exists)
+            {
                 throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + sourceDirPath);
+            }
 
             DirectoryInfo[] directories = sourceDirectory.GetDirectories();
 
@@ -211,7 +314,7 @@ namespace ModBotInstaller
             foreach (FileInfo file in files)
             {
                 string tempPath = Path.Combine(destDirPath, file.Name);
-                file.CopyTo(tempPath, true);
+                TryCopyFile(file, tempPath, true);
             }
 
             foreach (DirectoryInfo subdirectory in directories)
@@ -221,25 +324,176 @@ namespace ModBotInstaller
             }
         }
 
-        public static void RemoveRecursive(Control control)
+        public static void TryCopyFile(FileInfo source, string destinationPath, bool overwrite)
         {
-            if (control.IsDisposed)
-                return;
-
-            foreach (Control childControl in control.Controls)
+            try
             {
-                RemoveRecursive(childControl);
+                source.CopyTo(destinationPath, overwrite);
             }
+            catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x00000070) // ERROR_DISK_FULL
+            {
+                DialogResult dialogResult = MessageBox.Show("There is not enough disk space to copy files, clear up some space and try again", "Unable to copy files", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
 
-            if (control.Parent != null)
-                control.Parent.Controls.Remove(control);
-            
-            control.Dispose();
+                if (dialogResult == DialogResult.Retry)
+                {
+                    TryCopyFile(source, destinationPath, overwrite);
+                }
+                else if (dialogResult == DialogResult.Cancel)
+                {
+                    EndProcess();
+                }
+            }
+            catch (IOException io) when (((io.HResult & 0x0000FFFF) == 0x000004C8) || ((io.HResult & 0x0000FFFF) == 0x00000020)) // ERROR_USER_MAPPED_FILE or ERROR_SHARING_VIOLATION
+            {
+                DialogResult dialogResult = MessageBox.Show("Source or destination files are open in another program, please close any programs that are using Clone Drone's files and try again.", "Unable to copy files", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+
+                if (dialogResult == DialogResult.Retry)
+                {
+                    TryCopyFile(source, destinationPath, overwrite);
+                }
+                else if (dialogResult == DialogResult.Cancel)
+                {
+                    EndProcess();
+                }
+            }
+            catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x00000050) // ERROR_FILE_EXISTS
+            {
+                MessageBox.Show("Destination file already exists. Please report this to the Mod-Bot team.", "Unable to copy files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                EndProcess(); // Not sure how to handle this, since the user won't really be able to fix it, maybe we could just delete the destination file?? For now though, the overwrite parameter is always set to true, so this should never happen
+            }
+            catch (IOException io) when (((io.HResult & 0x0000FFFF) == 0x000000E1) || ((io.HResult & 0x0000FFFF) == 0x000000E2)) // ERROR_VIRUS_INFECTED or ERROR_VIRUS_DELETED
+            {
+                // This will pretty much only happen if Windows Defender stops the installer from accessing the old Injector.exe file, since it may still exist. But, we don't want to do anything with it anyway, so we just ignore the exception, and in turn, skip copying the file.
+            }
+            catch (Exception e) when ((e is SecurityException) || (e is UnauthorizedAccessException))
+            {
+                DialogResult dialogResult = MessageBox.Show("Installer is not authorized to access files for copy, please make sure all files have the correct permissions and try again", "Unable to copy files", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+
+                if (dialogResult == DialogResult.Retry)
+                {
+                    TryCopyFile(source, destinationPath, overwrite);
+                }
+                else if (dialogResult == DialogResult.Cancel)
+                {
+                    EndProcess();
+                }
+            }
+            catch (Exception e) // Any other error type
+            {
+                MessageBox.Show("An error uccured while copying files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to copy files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                EndProcess();
+            }
         }
 
         public static float Lerp(float start, float end, float t)
         {
             return start + ((end - start) * t);
+        }
+
+        public static void EndProcess()
+        {
+            Process.GetCurrentProcess().Kill();
+        }
+
+        public static string GetTempDirectoryPath()
+        {
+            string path = Path.GetTempPath() + Guid.NewGuid().ToString();
+            if (Directory.Exists(path)) // If the directory exists, find a new name
+                return GetTempDirectoryPath();
+
+            return path;
+        }
+
+        public static void TryDeleteDirectory(string path, bool recursive)
+        {
+            try
+            {
+                Directory.Delete(path, recursive);
+            }
+            catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x000004C8 || (io.HResult & 0x0000FFFF) == 0x00000020) // ERROR_USER_MAPPED_FILE or ERROR_SHARING_VIOLATION
+            {
+                MessageBox.Show("Source or destination files are open in another program, please close them and try again", "Unable to remove directories", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TryDeleteDirectory(path, recursive);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // If the directory doesn't exist, we ignore it
+            }
+            catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x00000091 && recursive) // ERROR_DIR_NOT_EMPTY and 'recursive' is true
+            {
+                // For some reason, this exception is thrown even when 'recursive' is true. But it still removes the directory if this exception is ignored
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("An error uccured while deleting temporary files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to remove files", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                EndProcess();
+            }
+        }
+
+        public static string FindGameInstallDirectoryFromSteam()
+        {
+            string registryKey;
+
+            // The registry key is different on 64-bit and 32-bit
+            if (Environment.Is64BitOperatingSystem)
+            {
+                registryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Valve\Steam";
+            }
+            else
+            {
+                registryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam";
+            }
+
+            // Gets the path to the "Steam" folder
+            string steamInstallPath = Registry.GetValue(registryKey, "InstallPath", null) as string;
+            if (!string.IsNullOrEmpty(steamInstallPath) && Directory.Exists(steamInstallPath))
+            {
+                // The path to the "steamapps" folder
+                string steamappsPath = steamInstallPath + @"\steamapps";
+                
+                // Clone Drone's "appmanifest.acf" file
+                string appmanifestFilePath = steamappsPath + @"\appmanifest_" + Constants.CLONE_DRONE_STEAMAPPID + ".acf";
+
+                if (File.Exists(appmanifestFilePath))
+                {
+                    // Parse the .acf file
+                    string[] appmanifestLines = File.ReadAllLines(appmanifestFilePath);
+                    if (AcfParser.TryParseAcf(appmanifestLines, out AcfTree tree))
+                    {
+                        // Here we can also check if the user is on the experimental branch by getting the value of "UserConfig/betakey", if the value in that node is "experimental", then the user is on the experimental branch, otherwise, the value is an empty string
+                        if (tree.TryGetNodeValue("installdir", out string installFolderName))
+                            return steamappsPath + @"\common\" + installFolderName;
+                    }
+                }
+            }
+
+            return string.Empty;
+        }
+
+        public static Type GetTypeIgnoringNamespace(this Assembly assembly, string name, bool ignoreCase)
+        {
+            Type[] types = assembly.GetTypes();
+            foreach (Type type in types)
+            {
+                if (string.Equals(type.Name, name, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                    return type;
+            }
+
+            return null;
+        }
+
+        public static string AddSpacesToCamelCasedString(string camelCasedString)
+        {
+            string text = "";
+            char[] array = camelCasedString.ToCharArray();
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (i != 0 && char.IsUpper(array[i]))
+                    text += " ";
+                
+                text += array[i].ToString();
+            }
+            return text;
         }
     }
 }

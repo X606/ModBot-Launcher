@@ -1,6 +1,7 @@
 ﻿using System;
+using System.IO;
 
-public static class NewAppDomain
+public static class AppDomainExecutor
 {
     public static void Execute(Action action)
     {
@@ -72,26 +73,29 @@ public static class NewAppDomain
                 AppDomain.Unload(domain);
         }
     }
-}
 
-public class AppDomainDelegate : MarshalByRefObject
-{
-    public void Execute(Action action)
+    public static TResult Execute<T, TResult>(T parameter, Func<T, AppDomain, TResult> action, string probingPath = null)
     {
-        action();
-    }
+        AppDomain domain = null;
 
-    public void Execute<T>(T parameter, Action<T> action)
-    {
-        action(parameter);
-    }
-    public T Execute<T>(Func<T> action)
-    {
-        return action();
-    }
+        try
+        {
+            if (probingPath == null)
+            {
+                domain = AppDomain.CreateDomain("New App Domain: " + Guid.NewGuid());
+            }
+            else
+            {
+                domain = AppDomain.CreateDomain("New App Domain: " + Guid.NewGuid(), null, new AppDomainSetup { ApplicationName = "Mod-Bot Launcher", DynamicBase = new DirectoryInfo(probingPath).Parent.Parent.FullName, PrivateBinPath = probingPath });
+            }
 
-    public TResult Execute<T, TResult>(T parameter, Func<T, TResult> action)
-    {
-        return action(parameter);
+            AppDomainDelegate domainDelegate = (AppDomainDelegate)domain.CreateInstanceAndUnwrap(typeof(AppDomainDelegate).Assembly.FullName, typeof(AppDomainDelegate).FullName);
+            return domainDelegate.Execute(parameter, domain, action);
+        }
+        finally
+        {
+            if (domain != null)
+                AppDomain.Unload(domain);
+        }
     }
 }

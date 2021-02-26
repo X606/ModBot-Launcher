@@ -103,6 +103,9 @@
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.InteropServices.RuntimeInformation.4.3.0\lib\net45\System.Runtime.InteropServices.RuntimeInformation.dll</HintPath>
     </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -114,8 +117,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppDomainStuff.cs" />
+    <Compile Include="AcfParsing\AcfBranchNode.cs" />
+    <Compile Include="AcfParsing\AcfNode.cs" />
+    <Compile Include="AcfParsing\AcfParser.cs" />
+    <Compile Include="AcfParsing\AcfTree.cs" />
+    <Compile Include="AcfParsing\AcfValueNode.cs" />
+    <Compile Include="AppDomainDelegate.cs" />
+    <Compile Include="AppDomainExecutor.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="DownloadedData.cs" />
+    <Compile Include="FirebaseModInfo.cs" />
     <Compile Include="Form2.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -126,6 +137,7 @@
     <Compile Include="Injector\ModBotInjector.cs" />
     <Compile Include="Injector\Util.cs" />
     <Compile Include="InstalledModsPanelUIItem.cs" />
+    <Compile Include="InstalledModsPanelUIItem_Non2.0.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

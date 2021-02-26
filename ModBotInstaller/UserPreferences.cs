@@ -8,6 +8,7 @@ using System.Windows.Forms;
 
 namespace ModBotInstaller
 {
+    [Serializable]
     public class UserPreferences
     {
         public static UserPreferences Current;

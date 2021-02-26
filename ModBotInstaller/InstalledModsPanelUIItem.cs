@@ -38,6 +38,8 @@ namespace ModBotInstaller
 
         Form2 _owner;
 
+        Dictionary<string, DirectoryInfo> _persistentFoldersCache;
+
         public InstalledModsPanelUIItem(ModInfo modInfo, Control parent, Form2 owner)
         {
             _owner = owner;
@@ -149,6 +151,7 @@ namespace ModBotInstaller
             };
             _modPanel.Controls.Add(_modIDLabel);
 
+            /*
             _settingsIcon = new PictureBox
             {
                 Name = _modPanel.Name + "_SettingsIcon",
@@ -163,11 +166,11 @@ namespace ModBotInstaller
 
             _settingsIconTooltip = new ToolTip();
             _settingsIconTooltip.SetToolTip(_settingsIcon, "Mod settings for " + _localModInfo.DisplayName);
-
+            */
 
             _updateStatusLabel = new Label
             {
-                Name = _modPanel.Name + _modPanel.Name + "_UpdateStatus",
+                Name = _modPanel.Name + "_UpdateStatus",
                 Parent = _modPanel,
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
                 AutoSize = true,
@@ -212,6 +215,16 @@ namespace ModBotInstaller
             _updateStatusLabel.Visible = false;
             _updateButton.Visible = false;
             _updateProgressBar.Visible = false;
+
+            _persistentFoldersCache = new Dictionary<string, DirectoryInfo>();
+            if (_localModInfo.PersistentFolders != null)
+            {
+                foreach (PersistentFolderData persistentFolderData in _localModInfo.PersistentFolders)
+                {
+                    string folderPath = _localModInfo.ModFolderPath + "/" + persistentFolderData.FolderName;
+                    _persistentFoldersCache.Add(persistentFolderData.GUID, new DirectoryInfo(folderPath));
+                }
+            }
 
             getServerModInfoAndCheckForUpdates();
         }
@@ -284,6 +297,11 @@ namespace ModBotInstaller
 
         void onUpdateButtonClicked(object sender, EventArgs e)
         {
+            updateMod();
+        }
+
+        async void updateMod()
+        {
             _updateButton.Visible = false;
 
             _updateStatusLabel.Visible = true;
@@ -291,11 +309,6 @@ namespace ModBotInstaller
 
             _updateProgressBar.Visible = true;
 
-            updateMod();
-        }
-
-        async void updateMod()
-        {
             _owner.OnModStartedUpdating();
 
             _updateProgressBar.Progress = 0f;
@@ -304,18 +317,45 @@ namespace ModBotInstaller
 
             string tempModFolderCopyPath = Path.GetTempPath() + Utils.StripAllInvalidPathCharacters(_localModInfo.UniqueID) + "_backup";
             if (Directory.Exists(tempModFolderCopyPath))
-                Directory.Delete(tempModFolderCopyPath, true);
+            {
+                try
+                {
+                    Directory.Delete(tempModFolderCopyPath, true);
+                }
+                catch
+                {
+                    // If we can't remove the existing backup files, create another folder, this time with a completely random name
+                    tempModFolderCopyPath = Utils.GetTempDirectoryPath();
+                }
+            }
+
+            if (Directory.Exists(updateFilesDirectory))
+            {
+                try
+                {
+                    Directory.Delete(updateFilesDirectory, true);
+                }
+                catch
+                {
+                    // If we can't remove the existing update files, create another folder, this time with a completely random name
+                    updateFilesDirectory = Utils.GetTempDirectoryPath();
+                }
+            }
+            Directory.CreateDirectory(updateFilesDirectory);
 
             Utils.CopyDirectory(_localModInfo.ModFolderPath, tempModFolderCopyPath);
 
             using (Stream downloadedModFile = await Utils.DownloadFileAsync(@"https://modbot.org/api?operation=downloadMod&id=" + _localModInfo.UniqueID))
             {
+                string persistentFoldersTempDirectoryPath = Utils.GetTempDirectoryPath();
+                if (_localModInfo.PersistentFolders != null)
+                {
+                    Utils.MoveAllPersistentFoldersTo(_localModInfo.ModFolderPath, persistentFoldersTempDirectoryPath, _localModInfo.PersistentFolders);
+                }
+
+                Utils.TryDeleteDirectory(_localModInfo.ModFolderPath, true);
+
                 _updateProgressBar.Progress = 0.1f;
-
-                if (Directory.Exists(updateFilesDirectory))
-                    Directory.Delete(updateFilesDirectory, true);
-
-                Directory.CreateDirectory(updateFilesDirectory);
 
                 using (ZipArchive zip = new ZipArchive(downloadedModFile, ZipArchiveMode.Read))
                 {
@@ -337,11 +377,17 @@ namespace ModBotInstaller
                     }
                 }
 
+                if (_serverModInfo.PersistentFolders != null)
+                {
+                    Utils.MoveAllPersistentFoldersTo(persistentFoldersTempDirectoryPath, _localModInfo.ModFolderPath, _serverModInfo.PersistentFolders);
+                }
+                Utils.TryDeleteDirectory(persistentFoldersTempDirectoryPath, true);
+
                 _updateProgressBar.Progress = 0.9f;
             }
 
             Utils.CopyDirectory(updateFilesDirectory, _localModInfo.ModFolderPath);
-            Directory.Delete(updateFilesDirectory, true);
+            Utils.TryDeleteDirectory(updateFilesDirectory, true);
 
             _updateProgressBar.Progress = 1f;
 
@@ -367,11 +413,11 @@ namespace ModBotInstaller
 
                 if (dialogResult == DialogResult.OK)
                 {
-                    Directory.Delete(modFolderPath, true); // Remove all downloaded mod files
-                    Utils.CopyDirectory(tempModFolderCopyPath, modFolderPath);
+                    Utils.TryDeleteDirectory(modFolderPath, true); // Remove all downloaded mod files
+                    Utils.CopyDirectory(tempModFolderCopyPath, modFolderPath); // Restore previous installed version of mod
 
                     // Remove temporary local copy of mod
-                    Directory.Delete(tempModFolderCopyPath, true);
+                    Utils.TryDeleteDirectory(tempModFolderCopyPath, true);
 
                     return;
                 }
@@ -382,7 +428,7 @@ namespace ModBotInstaller
             refreshState();
 
             // Remove temporary local copy of mod
-            Directory.Delete(tempModFolderCopyPath, true);
+            Utils.TryDeleteDirectory(tempModFolderCopyPath, true);
 
             _owner.OnModFinishedUpdating();
         }

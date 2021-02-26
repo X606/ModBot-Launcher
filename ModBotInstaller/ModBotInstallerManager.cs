@@ -46,7 +46,7 @@ namespace ModBotInstaller
 
                     // Clear the folder of all files and subdirectories if it already exists
                     if (Directory.Exists(extractedZipFilePath))
-                        Directory.Delete(extractedZipFilePath, true);
+                        Utils.TryDeleteDirectory(extractedZipFilePath, true);
 
                     ZipFile.ExtractToDirectory(zipPath, extractedZipFilePath);
                     File.Delete(zipPath); // Delete the temporary sip file
@@ -54,30 +54,10 @@ namespace ModBotInstaller
 
                 SetProgress(0.55f);
 
-                // System.IO.IOException: 'The requested operation cannot be performed on a file with a user-mapped section open.'
-
-                try
-                {
-                    Utils.CopyDirectory(extractedZipFilePath, installationPath);
-                }
-                catch (IOException)
-                {
-                    DialogResult dialogResult = MessageBox.Show("Could not access game files, they might be opened in another program, if you have Clone Drone running, please close it and try again.", "Error installing Mod-Bot", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
-
-                    if (dialogResult == DialogResult.Retry)
-                    {
-                        Install(installationPath, onComplete);
-                        return;
-                    }
-                    else // DialogResult.Cancel
-                    {
-                        Process.GetCurrentProcess().Kill();
-                        return;
-                    }
-                }
+                Utils.CopyDirectory(extractedZipFilePath, installationPath);
 
                 if (!UserPreferences.Current.ShouldUseBetaPath)
-                    Directory.Delete(extractedZipFilePath, true);
+                    Utils.TryDeleteDirectory(extractedZipFilePath, true);
 
                 string managedFolderPath = installationPath + "/Clone Drone in the Danger Zone_Data/Managed/";
                 Directory.SetCurrentDirectory(managedFolderPath);
@@ -126,7 +106,7 @@ namespace ModBotInstaller
             }
 
             // WARNING: This code gets executed in its own AppDomain, so using any variables will not work, you will have to add a field to the GetModBotInstallationInputStateInfo class and use it instead
-            GetModBotInstallationOutputStateInfo state = NewAppDomain.Execute(new GetModBotInstallationInputStateInfo()
+            GetModBotInstallationOutputStateInfo state = AppDomainExecutor.Execute(new GetModBotInstallationInputStateInfo()
             {
                 AssemblyPath = assemblyPath,
                 ModlibraryPath = modlibraryPath,
@@ -159,21 +139,18 @@ namespace ModBotInstaller
                 if (!foundModdedObject)
                     return new GetModBotInstallationOutputStateInfo(ModBotInstallationState.NotInstalled);
 
-                FileInfo file = new FileInfo(input.ModlibraryPath);
-                
-
                 Assembly modlibraryAssembly;
                 try
                 {
                     modlibraryAssembly = Assembly.LoadFrom(input.ModlibraryPath);
                 }
-                catch (FileLoadException)
+                catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x000004C8) // ERROR_USER_MAPPED_FILE
                 {
                     return new GetModBotInstallationOutputStateInfo(ModBotInstallationState.Failed, null, "Could not load one or more required files, if you have Clone Drone running, please close it and try again");
                 }
                 catch
                 {
-                    // If there is an error reading the ModLibrary assembly, we assume the ModBot installation of faulty, so be mark it as not installed
+                    // If there is an error reading the ModLibrary assembly, we assume the ModBot installation is faulty, so be mark it as not installed
                     return new GetModBotInstallationOutputStateInfo(ModBotInstallationState.NotInstalled);
                 }
 

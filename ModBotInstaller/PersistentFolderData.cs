@@ -5,7 +5,7 @@ namespace ModBotInstaller
     [Serializable]
     public struct PersistentFolderData
     {
-        public readonly string GUID;
-        public readonly string FolderName;
+        public string GUID;
+        public string FolderName;
     }
 }
