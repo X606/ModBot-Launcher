@@ -222,7 +222,7 @@ namespace ModBotInstaller
             catch (Exception e) // Any other error type
             {
                 MessageBox.Show("An error uccured while extracting files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to extract files", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                EndProcess();
+                EndCurrentProcess();
             }
         }
 
@@ -267,7 +267,7 @@ namespace ModBotInstaller
                 }
                 else if (dialogResult == DialogResult.Cancel)
                 {
-                    EndProcess();
+                    EndCurrentProcess();
                 }
             }
             catch (IOException io) when (((io.HResult & 0x0000FFFF) == 0x000000E1) || ((io.HResult & 0x0000FFFF) == 0x000000E2)) // ERROR_VIRUS_INFECTED or ERROR_VIRUS_DELETED
@@ -284,13 +284,13 @@ namespace ModBotInstaller
                 }
                 else if (dialogResult == DialogResult.Cancel)
                 {
-                    EndProcess();
+                    EndCurrentProcess();
                 }
             }
             catch (Exception e) // Any other error type
             {
                 MessageBox.Show("An error uccured while moving files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to move files", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                EndProcess();
+                EndCurrentProcess();
             }
         }
 
@@ -340,7 +340,7 @@ namespace ModBotInstaller
                 }
                 else if (dialogResult == DialogResult.Cancel)
                 {
-                    EndProcess();
+                    EndCurrentProcess();
                 }
             }
             catch (IOException io) when (((io.HResult & 0x0000FFFF) == 0x000004C8) || ((io.HResult & 0x0000FFFF) == 0x00000020)) // ERROR_USER_MAPPED_FILE or ERROR_SHARING_VIOLATION
@@ -353,13 +353,13 @@ namespace ModBotInstaller
                 }
                 else if (dialogResult == DialogResult.Cancel)
                 {
-                    EndProcess();
+                    EndCurrentProcess();
                 }
             }
             catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x00000050) // ERROR_FILE_EXISTS
             {
                 MessageBox.Show("Destination file already exists. Please report this to the Mod-Bot team.", "Unable to copy files", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                EndProcess(); // Not sure how to handle this, since the user won't really be able to fix it, maybe we could just delete the destination file?? For now though, the overwrite parameter is always set to true, so this should never happen
+                EndCurrentProcess(); // Not sure how to handle this, since the user won't really be able to fix it, maybe we could just delete the destination file?? For now though, the overwrite parameter is always set to true, so this should never happen
             }
             catch (IOException io) when (((io.HResult & 0x0000FFFF) == 0x000000E1) || ((io.HResult & 0x0000FFFF) == 0x000000E2)) // ERROR_VIRUS_INFECTED or ERROR_VIRUS_DELETED
             {
@@ -375,13 +375,13 @@ namespace ModBotInstaller
                 }
                 else if (dialogResult == DialogResult.Cancel)
                 {
-                    EndProcess();
+                    EndCurrentProcess();
                 }
             }
             catch (Exception e) // Any other error type
             {
                 MessageBox.Show("An error uccured while copying files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to copy files", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                EndProcess();
+                EndCurrentProcess();
             }
         }
 
@@ -390,7 +390,7 @@ namespace ModBotInstaller
             return start + ((end - start) * t);
         }
 
-        public static void EndProcess()
+        public static void EndCurrentProcess()
         {
             Process.GetCurrentProcess().Kill();
         }
@@ -426,7 +426,7 @@ namespace ModBotInstaller
             catch (Exception e)
             {
                 MessageBox.Show("An error uccured while deleting temporary files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to remove files", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                EndProcess();
+                EndCurrentProcess();
             }
         }
 

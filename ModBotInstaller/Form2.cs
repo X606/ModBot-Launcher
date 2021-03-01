@@ -77,7 +77,7 @@ namespace ModBotInstaller
                     if (dialogResult == DialogResult.Cancel)
                     {
                         // End current process
-                        Utils.EndProcess();
+                        Utils.EndCurrentProcess();
                         return;
                     }
                     // If the selected option is not Cancel, we should try again
@@ -96,9 +96,9 @@ namespace ModBotInstaller
                 LocalVersionLabel.Visible = false;
             }
 
-            if (DownloadedData.HasData)
+            if (ServerData.HasData)
             {
-                LatestVersionLabel.Text = "Latest version: " + DownloadedData.LatestModBotVersion;
+                LatestVersionLabel.Text = "Latest version: " + ServerData.LatestModBotVersion;
             }
             else
             {

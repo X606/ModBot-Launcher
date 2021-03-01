@@ -28,7 +28,7 @@ namespace ModBotInstaller
                 }
                 else
                 {
-                    if (!DownloadedData.HasData)
+                    if (!ServerData.HasData)
                         throw new InvalidOperationException("Attempting to install non-local Mod-Bot version without downloaded data!");
 
                     ServicePointManager.Expect100Continue = true;
@@ -37,7 +37,7 @@ namespace ModBotInstaller
                     string zipPath = Path.GetTempPath() + "modbot.zip";
                     using (WebClient client = new WebClient())
                     {
-                        client.DownloadFile(DownloadedData.ModBotDownloadLink, zipPath);
+                        client.DownloadFile(ServerData.ModBotDownloadLink, zipPath);
                     }
 
                     SetProgress(0.5f);
@@ -110,8 +110,8 @@ namespace ModBotInstaller
             {
                 AssemblyPath = assemblyPath,
                 ModlibraryPath = modlibraryPath,
-                HasDownloadedData = DownloadedData.HasData,
-                LatestModBotVersion = DownloadedData.LatestModBotVersion
+                HasDownloadedData = ServerData.HasData,
+                LatestModBotVersion = ServerData.LatestModBotVersion
             },
             delegate (GetModBotInstallationInputStateInfo input)
             {

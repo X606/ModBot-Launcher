@@ -125,7 +125,7 @@
     <Compile Include="AppDomainDelegate.cs" />
     <Compile Include="AppDomainExecutor.cs" />
     <Compile Include="Constants.cs" />
-    <Compile Include="DownloadedData.cs" />
+    <Compile Include="ServerData.cs" />
     <Compile Include="FirebaseModInfo.cs" />
     <Compile Include="Form2.cs">
       <SubType>Form</SubType>
@@ -204,6 +204,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="ModBot.ico" />
+    <None Include="Resources\ModBotInstallerUpdater.exe" />
     <None Include="Resources\SettingsIcon.png" />
     <None Include="Resources\no-image-available.png" />
   </ItemGroup>

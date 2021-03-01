@@ -41,43 +41,11 @@ namespace ModBotInstaller
             base.WndProc(ref m);
         }
 
-        void tryRequestModBotDownloadInfoFromServer()
-        {
-            if (Utils.SendWebRequest(@"https://modbot.org/api?operation=getCurrentModBotVersion", out DownloadedData.LatestModBotVersion) &&
-                Utils.SendWebRequest(@"https://modbot.org/api?operation=getModBotDownload", out DownloadedData.ModBotDownloadLink))
-            {
-                DownloadedData.HasData = true;
-            }
-            else
-            {
-                DialogResult dialogResult = MessageBox.Show("Unable to connect to the Mod-Bot server", "Connection failed", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button3);
-
-                if (dialogResult == DialogResult.Retry)
-                {
-                    tryRequestModBotDownloadInfoFromServer();
-                }
-                else if (dialogResult == DialogResult.Ignore)
-                {
-                    // Set to default values
-                    DownloadedData.LatestModBotVersion = null;
-                    DownloadedData.ModBotDownloadLink = null;
-                    DownloadedData.HasData = false;
-                }
-                else if (dialogResult == DialogResult.Abort)
-                {
-                    Process.GetCurrentProcess().Kill();
-                    return;
-                }
-            }
-        }
-
 
         private void MainForm_Load(object sender, EventArgs e)
         {
             // Disables maximizing the window by setting the maximized size to the default size
             MaximizedBounds = Bounds;
-
-            tryRequestModBotDownloadInfoFromServer();
 
             if (File.Exists(UserPreferences.FilePath))
             {
