@@ -450,19 +450,34 @@ namespace ModBotInstaller
             {
                 // The path to the "steamapps" folder
                 string steamappsPath = steamInstallPath + @"\steamapps";
-                
-                // Clone Drone's "appmanifest.acf" file
-                string appmanifestFilePath = steamappsPath + @"\appmanifest_" + Constants.CLONE_DRONE_STEAMAPPID + ".acf";
 
-                if (File.Exists(appmanifestFilePath))
+                string baseGameInstallDirectory = FindGameInstallDirectoryFromSteamapps(steamappsPath);
+                if (!string.IsNullOrEmpty(baseGameInstallDirectory))
+                    return baseGameInstallDirectory;
+
+                // The path to the "libraryfolders.vdf" file
+                string libraryFoldersFilePath = steamappsPath + @"\libraryfolders.vdf";
+
+                // This goes through all the different steam install directories the user has defined
+                if (File.Exists(libraryFoldersFilePath) && AcfParser.TryParseAcf(File.ReadAllLines(libraryFoldersFilePath), out AcfTree tree))
                 {
-                    // Parse the .acf file
-                    string[] appmanifestLines = File.ReadAllLines(appmanifestFilePath);
-                    if (AcfParser.TryParseAcf(appmanifestLines, out AcfTree tree))
+                    for (uint i = 1; i < uint.MaxValue; i++)
                     {
-                        // Here we can also check if the user is on the experimental branch by getting the value of "UserConfig/betakey", if the value in that node is "experimental", then the user is on the experimental branch, otherwise, the value is an empty string
-                        if (tree.TryGetNodeValue("installdir", out string installFolderName))
-                            return steamappsPath + @"\common\" + installFolderName;
+                        if (tree.TryGetChildWithKey(i.ToString(), out AcfNode node))
+                        {
+                            if (node is AcfValueNode valueNode)
+                            {
+                                string otherSteamAppsPath = valueNode.Value + @"\steamapps";
+
+                                string otherGameInstallDirectory = FindGameInstallDirectoryFromSteamapps(otherSteamAppsPath);
+                                if (!string.IsNullOrEmpty(otherGameInstallDirectory))
+                                    return otherGameInstallDirectory;
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
             }
@@ -470,16 +485,24 @@ namespace ModBotInstaller
             return string.Empty;
         }
 
-        public static Type GetTypeIgnoringNamespace(this Assembly assembly, string name, bool ignoreCase)
+        public static string FindGameInstallDirectoryFromSteamapps(string steamappsFolder)
         {
-            Type[] types = assembly.GetTypes();
-            foreach (Type type in types)
+            // Clone Drone's "appmanifest.acf" file
+            string appmanifestFilePath = steamappsFolder + @"\appmanifest_" + Constants.CLONE_DRONE_STEAMAPPID + ".acf";
+
+            if (File.Exists(appmanifestFilePath))
             {
-                if (string.Equals(type.Name, name, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-                    return type;
+                // Parse the .acf file
+                string[] appmanifestLines = File.ReadAllLines(appmanifestFilePath);
+                if (AcfParser.TryParseAcf(appmanifestLines, out AcfTree tree))
+                {
+                    // Here we can also check if the user is on the experimental branch by getting the value of "UserConfig/betakey", if the value in that node is "experimental", then the user is on the experimental branch, otherwise, the value is an empty string
+                    if (tree.TryGetNodeValue("installdir", out string installFolderName))
+                        return steamappsFolder + @"\common\" + installFolderName;
+                }
             }
 
-            return null;
+            return string.Empty;
         }
 
         public static string AddSpacesToCamelCasedString(string camelCasedString)

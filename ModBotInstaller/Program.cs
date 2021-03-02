@@ -36,20 +36,23 @@ namespace ModBotInstaller
 
                 if (currentVersion < latestVersion)
                 {
-                    ProcessStartInfo updaterStartInfo = new ProcessStartInfo();
-
-                    string updaterPath = Path.GetTempPath() + "ModBotInstallerUpdater.exe";
-                    File.WriteAllBytes(updaterPath, Resources.ModBotInstallerUpdater_ExeBytes);
-
-                    updaterStartInfo.FileName = updaterPath;
-                    updaterStartInfo.Arguments = "\"" + ServerData.ModBotLauncherDownloadLink + "\" \"" + Application.ExecutablePath + "\"";
-                    updaterStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-
-                    Process.Start(updaterStartInfo);
+                    startUpdateAvailable();
                     return;
                 }
             }
 
+            startNormal();
+        }
+
+        static void startUpdateAvailable()
+        {
+            UpdateAvailable updateAvailable = new UpdateAvailable();
+            updateAvailable.Show();
+            Application.Run();
+        }
+
+        static void startNormal()
+        {
             MainForm mainForm = new MainForm();
             mainForm.Show();
             Application.Run();

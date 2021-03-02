@@ -49,6 +49,8 @@ namespace ModBotInstallerUpdater
             updaterStartInfo.FileName = installerExecutablePath;
             updaterStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
+            updaterStartInfo.UseShellExecute = true;
+
             Process.Start(updaterStartInfo);
         }
 

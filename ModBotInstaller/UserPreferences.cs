@@ -51,7 +51,7 @@ namespace ModBotInstaller
         {
             Version = CURRENT_VERSION;
             GameInstallationDirectory = DEFAULT_INSTALL_DIRECTORY;
-            DontShowFirstPage = false;
+            DontShowFirstPage = true;
             EnableModBotBeta = false;
             AutoUpdateMods = false;
             ResetBetaSourceDirectory();

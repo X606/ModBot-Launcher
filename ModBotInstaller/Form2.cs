@@ -34,6 +34,9 @@ namespace ModBotInstaller
 
         HashSet<string> _missingModDependencies;
 
+        // Is Mod-Bot 2.0 or newer
+        bool _isModBot20OrNewer = false;
+
         /*
         Constants in Windows API
         0x84 = WM_NCHITTEST - Mouse Capture Test
@@ -65,10 +68,10 @@ namespace ModBotInstaller
             // Disables maximizing the window by setting the maximized size to the default size
             MaximizedBounds = Bounds;
 
-            string installedModBotVersion;
+            string installedModBotVersionString;
             do
             {
-                _installationState = ModBotInstallerManager.GetModBotInstallationState(UserPreferences.Current.GameInstallationDirectory, out installedModBotVersion, out string errorMessage);
+                _installationState = ModBotInstallerManager.GetModBotInstallationState(UserPreferences.Current.GameInstallationDirectory, out installedModBotVersionString, out string errorMessage);
 
                 if (_installationState == ModBotInstallationState.Failed)
                 {
@@ -87,9 +90,9 @@ namespace ModBotInstaller
 
             refreshItemsBasedOnCurrentState();
 
-            if (installedModBotVersion != null) // Just to be safe
+            if (installedModBotVersionString != null) // Just to be safe
             {
-                LocalVersionLabel.Text = "Local version: " + installedModBotVersion;
+                LocalVersionLabel.Text = "Local version: " + installedModBotVersionString;
             }
             else
             {
@@ -103,6 +106,12 @@ namespace ModBotInstaller
             else
             {
                 LatestVersionLabel.Visible = false;
+            }
+
+            if (Version.TryParse(installedModBotVersionString, out Version installedModBotVersion))
+            {
+                // Not the best way of doing this, but hey, it works
+                _isModBot20OrNewer = installedModBotVersion >= new Version(2, 0, 0, 0);
             }
         }
 
@@ -176,7 +185,7 @@ namespace ModBotInstaller
             _hasInitializedInstalledModsView = true;
 
             DirectoryInfo modsFolder = new DirectoryInfo(UserPreferences.Current.GameInstallationDirectory + "/mods");
-            if (Constants.IS_MODBOT_2_0)
+            if (_isModBot20OrNewer)
             {
                 _installedModsUIItems = new List<InstalledModsPanelUIItem>();
                 _missingModDependencies = new HashSet<string>();
