@@ -1,0 +1,1 @@
+Note: You must extract the exe file BEFORE starting it, it CANNOT be run from inside the zip file!
