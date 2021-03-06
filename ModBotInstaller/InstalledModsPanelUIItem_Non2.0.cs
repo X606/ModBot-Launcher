@@ -207,7 +207,7 @@ namespace ModBotInstaller
 
             _updateProgressBar.Progress = 0.5f;
 
-            FileStream fileStream = new FileStream(_localAssemblyFile.FullName, FileMode.Open, FileAccess.Write);
+            FileStream fileStream = new FileStream(_localAssemblyFile.FullName, FileMode.Create, FileAccess.Write);
             await newModFileStream.CopyToAsync(fileStream);
             await fileStream.FlushAsync();
 
