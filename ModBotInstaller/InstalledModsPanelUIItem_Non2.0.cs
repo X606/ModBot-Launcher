@@ -200,8 +200,6 @@ namespace ModBotInstaller
 
             _updateProgressBar.Visible = true;
 
-            _owner.OnModStartedUpdating();
-
             _updateProgressBar.Progress = 0f;
 
             if (newModFileStream == null)

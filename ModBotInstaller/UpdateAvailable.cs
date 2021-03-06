@@ -47,7 +47,7 @@ namespace ModBotInstaller
 
         private void installButton_Click(object sender, EventArgs e)
         {
-            Process.Start("https://modbot.org/");
+            Process.Start(ServerData.ModBotLauncherDownloadLink);
         }
 
         private void continueButton_Click(object sender, EventArgs e)
