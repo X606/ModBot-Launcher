@@ -78,17 +78,6 @@ namespace ModBotInstaller
             return files.FirstOrDefault((FileInfo file) => file.Name == name);
         }
 
-        public static FileInfo GetFile(FileInfo[] infos, string name)
-        {
-            for (int i = 0; i < infos.Length; i++)
-            {
-                if (infos[i].Name == name)
-                    return infos[i];
-            }
-
-            return null;
-        }
-
         public static async Task<Stream> DownloadFileAsync(string url, int timeout = 1500)
         {
             try
@@ -143,23 +132,6 @@ namespace ModBotInstaller
             {
                 if (onError != null)
                     onError(webException.Status);
-            }
-        }
-
-        public static async Task<WebRequestResult> SendWebRequestAsync(string url, int timeout = 1500)
-        {
-            try
-            {
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                request.Timeout = timeout;
-                HttpWebResponse response = (HttpWebResponse)(await request.GetResponseAsync());
-                
-                string result = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
-                return new WebRequestResult(result);
-            }
-            catch (WebException webException)
-            {
-                return new WebRequestResult(webException.Status);
             }
         }
 
@@ -503,20 +475,6 @@ namespace ModBotInstaller
             }
 
             return string.Empty;
-        }
-
-        public static string AddSpacesToCamelCasedString(string camelCasedString)
-        {
-            string text = "";
-            char[] array = camelCasedString.ToCharArray();
-            for (int i = 0; i < array.Length; i++)
-            {
-                if (i != 0 && char.IsUpper(array[i]))
-                    text += " ";
-                
-                text += array[i].ToString();
-            }
-            return text;
         }
     }
 }

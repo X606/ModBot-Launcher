@@ -13,6 +13,13 @@ using System.Windows.Forms;
 
 namespace ModBotInstaller
 {
+    public enum ModUpdateAvailableState
+    {
+        Unknown,
+        Available,
+        NotAvailable
+    }
+
     public class InstalledModsPanelUIItem
     {
         Panel _modPanel;
@@ -26,9 +33,6 @@ namespace ModBotInstaller
         Label _modVersionLabel;
         Label _modIDLabel;
 
-        PictureBox _settingsIcon;
-        ToolTip _settingsIconTooltip;
-
         Label _updateStatusLabel;
         Button _updateButton;
         NewProgressBar _updateProgressBar;
@@ -39,6 +43,9 @@ namespace ModBotInstaller
         Form2 _owner;
 
         Dictionary<string, DirectoryInfo> _persistentFoldersCache;
+
+        public ModUpdateAvailableState ModUpdateAvailableState { get; private set; }
+        public bool IsUpdating { get; private set; }
 
         public InstalledModsPanelUIItem(ModInfo modInfo, Control parent, Form2 owner)
         {
@@ -151,23 +158,6 @@ namespace ModBotInstaller
             };
             _modPanel.Controls.Add(_modIDLabel);
 
-            /*
-            _settingsIcon = new PictureBox
-            {
-                Name = _modPanel.Name + "_SettingsIcon",
-                Parent = _modPanel,
-                Location = new Point(435, 3),
-                Size = new Size(25, 25),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Image = Resources.SettingsIcon
-            };
-            _modPanel.Controls.Add(_settingsIcon);
-
-            _settingsIconTooltip = new ToolTip();
-            _settingsIconTooltip.SetToolTip(_settingsIcon, "Mod settings for " + _localModInfo.DisplayName);
-            */
-
             _updateStatusLabel = new Label
             {
                 Name = _modPanel.Name + "_UpdateStatus",
@@ -226,6 +216,8 @@ namespace ModBotInstaller
                 }
             }
 
+            ModUpdateAvailableState = ModUpdateAvailableState.Unknown;
+
             getServerModInfoAndCheckForUpdates();
         }
 
@@ -241,8 +233,6 @@ namespace ModBotInstaller
             _modVersionLabel.Text = "Version: " + _localModInfo.Version;
             _modIDLabel.Text = "Mod ID: " + _localModInfo.UniqueID;
 
-            _settingsIconTooltip.SetToolTip(_settingsIcon, "Mod settings for " + _localModInfo.DisplayName);
-
             _updateButton.Visible = false;
             _updateProgressBar.Visible = false;
             _updateStatusLabel.Visible = false;
@@ -255,6 +245,7 @@ namespace ModBotInstaller
 
         void onServerModInfoRequestError(WebExceptionStatus status)
         {
+            ModUpdateAvailableState = ModUpdateAvailableState.Unknown;
             _owner.OnModFinishedLoading();
         }
 
@@ -278,6 +269,8 @@ namespace ModBotInstaller
         {
             if (_serverModInfo.Version > _localModInfo.Version)
             {
+                ModUpdateAvailableState = ModUpdateAvailableState.Available;
+
                 if (UserPreferences.Current.AutoUpdateMods)
                 {
                     updateMod();
@@ -293,6 +286,10 @@ namespace ModBotInstaller
                     _updateButton.Enabled = true;
                 }
             }
+            else
+            {
+                ModUpdateAvailableState = ModUpdateAvailableState.NotAvailable;
+            }
         }
 
         void onUpdateButtonClicked(object sender, EventArgs e)
@@ -302,6 +299,8 @@ namespace ModBotInstaller
 
         async void updateMod()
         {
+            IsUpdating = true;
+
             _updateButton.Visible = false;
 
             _updateStatusLabel.Visible = true;
@@ -424,6 +423,9 @@ namespace ModBotInstaller
             }
 
             _localModInfo.ModFolderPath = modFolderPath;
+
+            ModUpdateAvailableState = ModUpdateAvailableState.NotAvailable;
+            IsUpdating = false;
 
             refreshState();
 
