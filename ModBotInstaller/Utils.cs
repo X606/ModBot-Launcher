@@ -1,5 +1,4 @@
 ﻿using Microsoft.Win32;
-using ModBotInstaller.AcfParsing;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -400,81 +399,6 @@ namespace ModBotInstaller
                 MessageBox.Show("An error uccured while deleting temporary files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to remove files", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 EndCurrentProcess();
             }
-        }
-
-        public static string FindGameInstallDirectoryFromSteam()
-        {
-            string registryKey;
-
-            // The registry key is different on 64-bit and 32-bit
-            if (Environment.Is64BitOperatingSystem)
-            {
-                registryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Valve\Steam";
-            }
-            else
-            {
-                registryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam";
-            }
-
-            // Gets the path to the "Steam" folder
-            string steamInstallPath = Registry.GetValue(registryKey, "InstallPath", null) as string;
-            if (!string.IsNullOrEmpty(steamInstallPath) && Directory.Exists(steamInstallPath))
-            {
-                // The path to the "steamapps" folder
-                string steamappsPath = steamInstallPath + @"\steamapps";
-
-                string baseGameInstallDirectory = FindGameInstallDirectoryFromSteamapps(steamappsPath);
-                if (!string.IsNullOrEmpty(baseGameInstallDirectory))
-                    return baseGameInstallDirectory;
-
-                // The path to the "libraryfolders.vdf" file
-                string libraryFoldersFilePath = steamappsPath + @"\libraryfolders.vdf";
-
-                // This goes through all the different steam install directories the user has defined
-                if (File.Exists(libraryFoldersFilePath) && AcfParser.TryParseAcf(File.ReadAllLines(libraryFoldersFilePath), out AcfTree tree))
-                {
-                    for (uint i = 1; i < uint.MaxValue; i++)
-                    {
-                        if (tree.TryGetChildWithKey(i.ToString(), out AcfNode node))
-                        {
-                            if (node is AcfValueNode valueNode)
-                            {
-                                string otherSteamAppsPath = valueNode.Value + @"\steamapps";
-
-                                string otherGameInstallDirectory = FindGameInstallDirectoryFromSteamapps(otherSteamAppsPath);
-                                if (!string.IsNullOrEmpty(otherGameInstallDirectory))
-                                    return otherGameInstallDirectory;
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return string.Empty;
-        }
-
-        public static string FindGameInstallDirectoryFromSteamapps(string steamappsFolder)
-        {
-            // Clone Drone's "appmanifest.acf" file
-            string appmanifestFilePath = steamappsFolder + @"\appmanifest_" + Constants.CLONE_DRONE_STEAMAPPID + ".acf";
-
-            if (File.Exists(appmanifestFilePath))
-            {
-                // Parse the .acf file
-                string[] appmanifestLines = File.ReadAllLines(appmanifestFilePath);
-                if (AcfParser.TryParseAcf(appmanifestLines, out AcfTree tree))
-                {
-                    // Here we can also check if the user is on the experimental branch by getting the value of "UserConfig/betakey", if the value in that node is "experimental", then the user is on the experimental branch, otherwise, the value is an empty string
-                    if (tree.TryGetNodeValue("installdir", out string installFolderName))
-                        return steamappsFolder + @"\common\" + installFolderName;
-                }
-            }
-
-            return string.Empty;
         }
     }
 }

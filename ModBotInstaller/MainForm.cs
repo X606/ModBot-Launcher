@@ -71,12 +71,16 @@ namespace ModBotInstaller
             if (validateCurrentInstallationDirectory())
                 return true;
 
-            string installDirectory = Utils.FindGameInstallDirectoryFromSteam();
-            if (Utils.IsValidCloneDroneInstallationDirectory(installDirectory))
+            if (SteamInstallLocationFinder.TryGetInstallPath(out string steamInstallPath))
             {
-                UserPreferences.Current.GameInstallationDirectory = installDirectory;
-                return true;
-            }
+				if (Utils.IsValidCloneDroneInstallationDirectory(steamInstallPath))
+				{
+					UserPreferences.Current.IsSteamInstall = true;
+					UserPreferences.Current.GameInstallationDirectory = steamInstallPath;
+					UserPreferences.Current.SaveToFile();
+					return true;
+				}
+			}
 
             return false;
         }
@@ -122,13 +126,14 @@ namespace ModBotInstaller
         private void ChangeLocationButton_Click(object sender, EventArgs e)
         {
             CommonOpenFileDialog dialog = new CommonOpenFileDialog();
-            dialog.InitialDirectory = "C:/Program Files (x86)/Steam/steamapps/common";
+            dialog.InitialDirectory = "C:/";
             dialog.IsFolderPicker = true;
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
                 if (Utils.IsValidCloneDroneInstallationDirectory(dialog.FileName))
                 {
-                    UserPreferences.Current.GameInstallationDirectory = dialog.FileName;
+                    UserPreferences.Current.IsSteamInstall = false;
+					UserPreferences.Current.GameInstallationDirectory = dialog.FileName;
                     UserPreferences.Current.SaveToFile();
 
                     setPickerState(true);

@@ -267,7 +267,34 @@ namespace ModBotInstaller
 
         public void StartGameAndExit()
         {
-            Process.Start("steam://rungameid/" + Constants.CLONE_DRONE_STEAMAPPID); // Start Clone Drone via Steam
+            if (UserPreferences.Current.IsSteamInstall)
+            {
+                Process.Start("steam://rungameid/" + Constants.CLONE_DRONE_STEAMAPPID); // Start Clone Drone via Steam
+            }
+            else // we're on a non steam install, probably either pirated or maybe xbox?
+            {
+                string path = UserPreferences.Current.GameInstallationDirectory + "/Clone Drone in the Danger Zone.exe";
+
+                bool startedGame = false;
+                if (File.Exists(path))
+                {
+                    startedGame = true;
+
+                    try
+                    {
+						Process.Start(path);
+					}
+                    catch
+                    {
+                        startedGame = false;
+                    }
+                }
+
+                if (!startedGame)
+                {
+                    MessageBox.Show("Unable to automatically start the game, please start it manually instead", "Unable to start game", MessageBoxButtons.OK);
+				}
+			}
             Application.Exit();
         }
 

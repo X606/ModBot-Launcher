@@ -30,6 +30,7 @@ namespace ModBotInstaller
             betaSourceDirectory = UserPreferences.Current.ModBotBetaSourceDirectory;
             refreshBetaLocationItemsVisible();
             autoUpdateModsCheckbox.Checked = UserPreferences.Current.AutoUpdateMods;
+            isSteamInstallCheckBox.Checked = UserPreferences.Current.IsSteamInstall;
         }
 
         private void cancelButton_Click(object sender, EventArgs e)
@@ -43,6 +44,7 @@ namespace ModBotInstaller
             UserPreferences.Current.EnableModBotBeta = enableLocalBetaVersionCheckbox.Checked;
             UserPreferences.Current.ModBotBetaSourceDirectory = Utils.IsValidBetaInstallationDirectory(betaSourceDirectory) ? betaSourceDirectory : string.Empty;
             UserPreferences.Current.AutoUpdateMods = autoUpdateModsCheckbox.Checked;
+            UserPreferences.Current.IsSteamInstall = isSteamInstallCheckBox.Checked;
             UserPreferences.Current.SaveToFile();
 
             closeWindow();
@@ -99,5 +101,10 @@ namespace ModBotInstaller
                 changeBetaLocationNoteLabel.ForeColor = Color.Brown;
             }
         }
-    }
+
+		private void isSteamInstall_CheckedChanged(object sender, EventArgs e)
+		{
+
+		}
+	}
 }

@@ -29,10 +29,11 @@ namespace ModBotInstaller
 
         #endregion
 
-        const ushort CURRENT_VERSION = 2;
+        const ushort CURRENT_VERSION = 3;
 
         public ushort Version;
         public string GameInstallationDirectory;
+        public bool IsSteamInstall;
 
         public bool EnableModBotBeta;
         public string ModBotBetaSourceDirectory; // The source directory to install the beta version from
@@ -51,7 +52,8 @@ namespace ModBotInstaller
         {
             Version = CURRENT_VERSION;
             GameInstallationDirectory = DEFAULT_INSTALL_DIRECTORY;
-            DontShowFirstPage = true;
+            IsSteamInstall = true;
+			DontShowFirstPage = true;
             EnableModBotBeta = false;
             AutoUpdateMods = false;
             ResetBetaSourceDirectory();
@@ -86,7 +88,16 @@ namespace ModBotInstaller
                         AutoUpdateMods = false;
                     }
 
-                    Version = CURRENT_VERSION;
+					if (Version >= 3)
+					{
+						IsSteamInstall = reader.ReadBoolean();
+					}
+					else
+					{
+						IsSteamInstall = false;
+					}
+
+					Version = CURRENT_VERSION;
                 }
             }
         }
@@ -103,6 +114,7 @@ namespace ModBotInstaller
                     writer.Write(DontShowFirstPage);
                     writer.Write(EnableModBotBeta);
                     writer.Write(AutoUpdateMods);
+                    writer.Write(IsSteamInstall);
                 }
 
                 File.WriteAllBytes(FilePath, stream.ToArray());

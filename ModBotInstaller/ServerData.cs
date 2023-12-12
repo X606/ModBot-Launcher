@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ModBotInstaller
@@ -14,13 +16,40 @@ namespace ModBotInstaller
 
         public static void TryDownload()
         {
-            if (Utils.SendWebRequest(@"https://modbot.org/api?operation=getCurrentModBotVersion", out LatestModBotVersion) &&
-                Utils.SendWebRequest(@"https://modbot.org/api?operation=getCurrentModBotLauncherVersion", out LatestModBotLauncherVersion) &&
-                Utils.SendWebRequest(@"https://modbot.org/api?operation=getModBotDownload", out ModBotDownloadLink) &&
-                Utils.SendWebRequest(@"https://modbot.org/api?operation=getModBotLauncherDownload", out ModBotLauncherDownloadLink))
+            string[] links = new string[4]
             {
-                HasData = true;
+				"https://modbot.org/api?operation=getCurrentModBotVersion",
+				"https://modbot.org/api?operation=getCurrentModBotLauncherVersion",
+				"https://modbot.org/api?operation=getModBotDownload",
+				"https://modbot.org/api?operation=getModBotLauncherDownload"
+			};
+            bool[] results = new bool[4];
+            string[] data = new string[4];
+            Thread[] threads = new Thread[4];
+
+            for(int i = 0; i < 4; i++)
+            {
+                threads[i] = new Thread(delegate (object indexObj)
+                {
+                    int index = (int)indexObj;
+                    results[index] = Utils.SendWebRequest(links[index], out data[index], 1500);
+				});
+                threads[i].Start(i);
+			}
+            
+            for(int i = 0; i < 4; i++)
+            {
+                threads[i].Join();
             }
+
+            if (results.All(x => x == true))
+            {
+                LatestModBotVersion = data[0];
+				LatestModBotLauncherVersion = data[1];
+				ModBotDownloadLink = data[2];
+                ModBotLauncherDownloadLink = data[3];
+				HasData = true;
+			}
             else
             {
                 DialogResult dialogResult = MessageBox.Show("Unable to connect to the Mod-Bot server", "Connection failed", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button3);
