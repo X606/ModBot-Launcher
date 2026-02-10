@@ -1,7 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Newtonsoft.Json;
 
 namespace ModBotInstaller
 {
@@ -11,23 +13,51 @@ namespace ModBotInstaller
 
         public static string LatestModBotVersion;
         public static string LatestModBotLauncherVersion;
-        public static string ModBotDownloadLink;
-        public static string ModBotLauncherDownloadLink;
+        public const string ModBotDownloadLink = "https://github.com/X606/ModBot/releases/latest/download/Mod-Bot.zip";
+        public const string ModBotLauncherDownloadLink = "https://github.com/X606/ModBot-Launcher/releases/latest/download/Mod-Bot_Launcher.zip";
+
+        struct GithubTagData
+        {
+            public string name;
+        }
+
+        static Version GetLatestVersionFromGithubTagsData(string data)
+        {
+            GithubTagData[] tags = JsonConvert.DeserializeObject<GithubTagData[]>(data);
+
+            Version maxVersion = new Version(0, 0, 0, 0);
+            foreach(GithubTagData tag in tags)
+            {
+                string filteredCurrentVersion = tag.name.Trim().Trim('v');
+
+                if (filteredCurrentVersion.EndsWith("-beta"))
+                {
+                    filteredCurrentVersion = filteredCurrentVersion.Substring(0, filteredCurrentVersion.Length - "-beta".Length);
+                }
+
+                Version currentVersion = new Version(filteredCurrentVersion);
+
+                if (currentVersion > maxVersion)
+                {
+                    maxVersion = currentVersion;
+                }
+            }
+
+            return maxVersion;
+        }
 
         public static void TryDownload()
         {
-            string[] links = new string[4]
+            string[] links = new string[2]
             {
-				"https://modbot.org/api?operation=getCurrentModBotVersion",
-				"https://modbot.org/api?operation=getCurrentModBotLauncherVersion",
-				"https://modbot.org/api?operation=getModBotDownload",
-				"https://modbot.org/api?operation=getModBotLauncherDownload"
-			};
-            bool[] results = new bool[4];
-            string[] data = new string[4];
-            Thread[] threads = new Thread[4];
+                "https://api.github.com/repos/X606/ModBot/tags",
+                "https://api.github.com/repos/X606/ModBot-Launcher/tags",
+            };
+            bool[] results = new bool[2];
+            string[] data = new string[2];
+            Thread[] threads = new Thread[2];
 
-            for(int i = 0; i < 4; i++)
+            for(int i = 0; i < 2; i++)
             {
                 threads[i] = new Thread(delegate (object indexObj)
                 {
@@ -37,22 +67,26 @@ namespace ModBotInstaller
                 threads[i].Start(i);
 			}
             
-            for(int i = 0; i < 4; i++)
+            for(int i = 0; i < 2; i++)
             {
                 threads[i].Join();
             }
 
             if (results.All(x => x == true))
             {
-                LatestModBotVersion = data[0];
-				LatestModBotLauncherVersion = data[1];
-				ModBotDownloadLink = data[2];
-                ModBotLauncherDownloadLink = data[3];
+                LatestModBotVersion = GetLatestVersionFromGithubTagsData(data[0]).ToString();
+                LatestModBotLauncherVersion = GetLatestVersionFromGithubTagsData(data[1]).ToString();
 				HasData = true;
 			}
             else
             {
-                DialogResult dialogResult = MessageBox.Show("Unable to connect to the Mod-Bot server", "Connection failed", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button3);
+                // Set to default values
+                LatestModBotVersion = null;
+                LatestModBotLauncherVersion = null;
+                HasData = false;
+
+                return;
+                DialogResult dialogResult = MessageBox.Show($"Unable to get the latest info", "Connection failed", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button3);
 
                 if (dialogResult == DialogResult.Retry)
                 {
@@ -63,7 +97,6 @@ namespace ModBotInstaller
                     // Set to default values
                     LatestModBotVersion = null;
                     LatestModBotLauncherVersion = null;
-                    ModBotDownloadLink = null;
                     HasData = false;
                 }
                 else if (dialogResult == DialogResult.Abort)

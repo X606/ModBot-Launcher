@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using ModBotInstaller.Properties;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -99,6 +100,7 @@ namespace ModBotInstaller
             {
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                 request.Timeout = timeout;
+                request.UserAgent = $"X606/ModBot-Launcher-{Application.ProductVersion}";
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 
                 result = new StreamReader(response.GetResponseStream()).ReadToEnd();
