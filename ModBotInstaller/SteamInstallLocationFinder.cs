@@ -58,7 +58,7 @@ namespace ModBotInstaller
 					continue;
 				}
 
-				bool containsKsp2 = app.GetChildNodes().Contains(Constants.CLONE_DRONE_STEAMAPPID.ToString());
+				bool containsKsp2 = app.GetChildNodes().Contains(Constants.DANGER_ZONE_STEAMAPPID.ToString());
 				if (containsKsp2)
 				{
 					string path = location["path"];

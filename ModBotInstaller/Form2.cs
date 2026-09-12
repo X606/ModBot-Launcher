@@ -66,7 +66,7 @@ namespace ModBotInstaller
             string installedModBotVersionString;
             do
             {
-                _installationState = ModBotInstallerManager.GetModBotInstallationState(UserPreferences.Current.GameInstallationDirectory, out installedModBotVersionString, out string errorMessage);
+                _installationState = ModBotInstallerManager.GetModBotInstallationState(UserPreferences.Current.GameInstallationDirectory, GameVersionType.DangerZone_Steam, out installedModBotVersionString, out string errorMessage);
 
                 if (_installationState == ModBotInstallationState.Failed)
                 {
@@ -269,7 +269,7 @@ namespace ModBotInstaller
         {
             if (UserPreferences.Current.IsSteamInstall)
             {
-                Process.Start("steam://rungameid/" + Constants.CLONE_DRONE_STEAMAPPID); // Start Clone Drone via Steam
+                Process.Start("steam://rungameid/" + Constants.DANGER_ZONE_STEAMAPPID); // Start Clone Drone via Steam
             }
             else // we're on a non steam install, probably either pirated or maybe xbox?
             {
@@ -314,7 +314,7 @@ namespace ModBotInstaller
                 ProgressBar.Show();
                 installingModBotLabel.Show();
                 ModBotInstallerManager.ProgressBar = ProgressBar;
-                ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, OnInstallFinished);
+                ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, GameVersionType.DangerZone_Steam, OnInstallFinished);
             }
             else
             {
@@ -339,7 +339,7 @@ namespace ModBotInstaller
             ProgressBar.Show();
             installingModBotLabel.Show();
             ModBotInstallerManager.ProgressBar = ProgressBar;
-            ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, OnInstallFinished);
+            ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, GameVersionType.DangerZone_Steam, OnInstallFinished);
         }
 
         private void modBotSettingsButton_Click(object sender, EventArgs e)

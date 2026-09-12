@@ -1,16 +1,11 @@
-﻿using Microsoft.Win32;
-using ModBotInstaller.Properties;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
 using System.Security;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -27,9 +22,16 @@ namespace ModBotInstaller
         {
             DirectoryInfo directory = new DirectoryInfo(path);
 
-            DirectoryInfo dataDirectory = directory.FindSubDirectory("Clone Drone in the Danger Zone_Data");
+            DirectoryInfo dataDirectory = directory.FindSubDirectory(Constants.DANGER_ZONE_STEAM_DATA_FOLDER);
             if (dataDirectory == null)
-                return false;
+            {
+                dataDirectory = directory.FindSubDirectory(Constants.DANGER_ZONE_EGS_DATA_FOLDER);
+                if (dataDirectory == null)
+                {
+                    dataDirectory = directory.FindSubDirectory(Constants.HYPERDOME_STEAM_DATA_FOLDER);
+                    if (dataDirectory == null) return false;
+                }
+            }
 
             DirectoryInfo managedDirectory = dataDirectory.FindSubDirectory("Managed");
             if (managedDirectory == null)
@@ -51,7 +53,7 @@ namespace ModBotInstaller
             if (directory == null)
                 return false;
 
-            DirectoryInfo dataDirectory = directory.FindSubDirectory("Clone Drone in the Danger Zone_Data");
+            /*DirectoryInfo dataDirectory = directory.FindSubDirectory("Clone Drone in the Danger Zone_Data");
             if (dataDirectory == null)
                 return false;
 
@@ -61,9 +63,11 @@ namespace ModBotInstaller
 
             FileInfo assembly = managedDirectory.FindFile("ModLibrary.dll");
             if (assembly == null)
-                return false;
+                return false;*/
 
-            return true;
+            return directory.FindSubDirectory(Constants.DANGER_ZONE_STEAM_BUILD_NAME) != null
+                && directory.FindSubDirectory(Constants.DANGER_ZONE_EGS_DATA_FOLDER) != null
+                && directory.FindSubDirectory(Constants.HYPERDOME_STEAM_BUILD_NAME) != null;
         }
 
         public static DirectoryInfo FindSubDirectory(this DirectoryInfo directoryInfo, string name, SearchOption mode = SearchOption.TopDirectoryOnly)
@@ -82,8 +86,10 @@ namespace ModBotInstaller
         {
             try
             {
-                HttpClient client = new HttpClient();
-                client.Timeout = TimeSpan.FromMilliseconds(timeout);
+                HttpClient client = new HttpClient
+                {
+                    Timeout = TimeSpan.FromMilliseconds(timeout)
+                };
                 Stream stream = await client.GetStreamAsync(url);
 
                 return stream;
@@ -400,6 +406,36 @@ namespace ModBotInstaller
             {
                 MessageBox.Show("An error uccured while deleting temporary files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to remove files", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 EndCurrentProcess();
+            }
+        }
+
+        public static string GetModBotBuildNameForGameVersion(GameVersionType gameVersion)
+        {
+            switch (gameVersion)
+            {
+                case GameVersionType.DangerZone_Steam:
+                    return Constants.DANGER_ZONE_STEAM_BUILD_NAME;
+                case GameVersionType.DangerZone_EGS:
+                    return Constants.DANGER_ZONE_EGS_BUILD_NAME;
+                case GameVersionType.Hyperdome_Steam:
+                    return Constants.HYPERDOME_STEAM_BUILD_NAME;
+                default:
+                    throw new NotImplementedException($"{gameVersion} not supported");
+            }
+        }
+
+        public static string GetGameDataFolderNameForGameVersion(GameVersionType gameVersion)
+        {
+            switch (gameVersion)
+            {
+                case GameVersionType.DangerZone_Steam:
+                    return Constants.DANGER_ZONE_STEAM_DATA_FOLDER;
+                case GameVersionType.DangerZone_EGS:
+                    return Constants.DANGER_ZONE_EGS_DATA_FOLDER;
+                case GameVersionType.Hyperdome_Steam:
+                    return Constants.HYPERDOME_STEAM_DATA_FOLDER;
+                default:
+                    throw new NotImplementedException($"{gameVersion} not supported");
             }
         }
     }

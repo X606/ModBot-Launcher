@@ -1,13 +1,9 @@
-﻿using ModBotInstaller.Injector;
-using Mono.Cecil;
+﻿using Mono.Cecil;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Reflection;
-using System.Resources;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -18,7 +14,7 @@ namespace ModBotInstaller
     {
         public static NewProgressBar ProgressBar;
 
-        public static void Install(string installationPath, Action onComplete)
+        public static void Install(string installationPath, GameVersionType gameVersion, Action onComplete)
         {
             new Thread(delegate ()
             {
@@ -57,16 +53,17 @@ namespace ModBotInstaller
 
                 SetProgress(0.55f);
 
-                Utils.CopyDirectory(extractedZipFilePath, installationPath);
+                string buildFolderName = Utils.GetModBotBuildNameForGameVersion(gameVersion);
+                string managedFolderPath = Path.Combine(installationPath, Utils.GetGameDataFolderNameForGameVersion(gameVersion), "Managed/");
+                Utils.CopyDirectory(Path.Combine(extractedZipFilePath, buildFolderName), installationPath);
+                Utils.CopyDirectory(Path.Combine(extractedZipFilePath, "libs"), managedFolderPath);
 
                 if (!UserPreferences.Current.ShouldUseBetaPath)
                     Utils.TryDeleteDirectory(extractedZipFilePath, true);
 
-                string managedFolderPath = installationPath + "/Clone Drone in the Danger Zone_Data/Managed/";
-                Directory.SetCurrentDirectory(managedFolderPath);
-
+                /*Directory.SetCurrentDirectory(managedFolderPath);
                 SetProgress(0.6f);
-                ModBotInjector.InstallModBot(managedFolderPath, delegate(float progress) { SetProgress(0.6f + (progress * 0.4f)); });
+                ModBotInjector.InstallModBot(managedFolderPath, delegate (float progress) { SetProgress(0.6f + (progress * 0.4f)); });*/
 
                 SetProgress(1f);
 
@@ -91,112 +88,114 @@ namespace ModBotInstaller
             });
         }
 
-        public static ModBotInstallationState GetModBotInstallationState(string installationPath, out string currentlyInstalledModBotVersion, out string errorMessage)
+        public static ModBotInstallationState GetModBotInstallationState(string installationPath, GameVersionType gameVersion, out string currentlyInstalledModBotVersion, out string errorMessage)
         {
-            string assemblyPath = installationPath + "/Clone Drone in the Danger Zone_Data/Managed/Assembly-CSharp.dll";
-            string modlibraryPath = installationPath + "/Clone Drone in the Danger Zone_Data/Managed/ModLibrary.dll";
+            string dataFolderName = Utils.GetGameDataFolderNameForGameVersion(gameVersion);
+            //string assemblyPath = Path.Combine(installationPath, dataFolderName, "Managed", "Assembly-CSharp.dll");
+            string modLibraryPath = Path.Combine(installationPath, dataFolderName, "Managed", "ModLibrary.dll");
 
+            /*
             if (!File.Exists(assemblyPath))
                 throw new Exception("This was not a valid game installation path");
+            */
 
-            if (!File.Exists(modlibraryPath))
+            if (!File.Exists(modLibraryPath))
             {
                 currentlyInstalledModBotVersion = null;
                 errorMessage = null;
                 return ModBotInstallationState.NotInstalled;
             }
 
+            /*
+            AssemblyDefinition assembly = null;
+            try
             {
-				AssemblyDefinition assembly = null;
-				try
-				{
-					assembly = AssemblyDefinition.ReadAssembly(assemblyPath);
-				}
-				catch
-				{
-					currentlyInstalledModBotVersion = null;
-					errorMessage = "Could not load one or more required files, if you have Clone Drone running, please close it and try again";
-					return ModBotInstallationState.Failed;
-				}
-				using (AssemblyDefinition assemblycharp = assembly)
-				{
-                    bool containsModdedObject = assembly.MainModule.Types.Any(x => x.Name == "ModdedObject");
-					if (!containsModdedObject)
-					{
-						currentlyInstalledModBotVersion = null;
-						errorMessage = null;
-						return ModBotInstallationState.NotInstalled;
-					}
-				}
-			}
-
+                assembly = AssemblyDefinition.ReadAssembly(assemblyPath);
+            }
+            catch
             {
-                AssemblyDefinition assembly = null;
-                try
+                currentlyInstalledModBotVersion = null;
+                errorMessage = "Could not load one or more required files, if you have Clone Drone running, please close it and try again";
+                return ModBotInstallationState.Failed;
+            }
+            using (AssemblyDefinition assemblycharp = assembly)
+            {
+                bool containsModdedObject = assembly.MainModule.Types.Any(x => x.Name == "ModdedObject");
+                if (!containsModdedObject)
                 {
-                    assembly = AssemblyDefinition.ReadAssembly(modlibraryPath);
-                }
-				catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x000004C8) // ERROR_USER_MAPPED_FILE
-				{
-					currentlyInstalledModBotVersion = null;
-					errorMessage = "Could not load one or more required files, if you have Clone Drone running, please close it and try again";
-					return ModBotInstallationState.Failed;
-				}
-				catch // If there is an error reading the ModLibrary assembly, we assume the ModBot installation is faulty, so be mark it as not installed
-				{
                     currentlyInstalledModBotVersion = null;
                     errorMessage = null;
                     return ModBotInstallationState.NotInstalled;
                 }
-                using (AssemblyDefinition modlibraryAssembly = assembly)
+            }
+            */
+
+            AssemblyDefinition assembly = null;
+            try
+            {
+                assembly = AssemblyDefinition.ReadAssembly(modLibraryPath);
+            }
+            catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x000004C8) // ERROR_USER_MAPPED_FILE
+            {
+                currentlyInstalledModBotVersion = null;
+                errorMessage = "Could not load one or more required files, if you have Clone Drone running, please close it and try again";
+                return ModBotInstallationState.Failed;
+            }
+            catch // If there is an error reading the ModLibrary assembly, we assume the ModBot installation is faulty, so be mark it as not installed
+            {
+                currentlyInstalledModBotVersion = null;
+                errorMessage = null;
+                return ModBotInstallationState.NotInstalled;
+            }
+            using (AssemblyDefinition modlibraryAssembly = assembly)
+            {
+                string data = Encoding.UTF8.GetString((modlibraryAssembly.MainModule.Resources.First() as EmbeddedResource).GetResourceData());
+
+                string version = null;
+                CustomAttribute fileVersionAttribute = modlibraryAssembly.CustomAttributes.FirstOrDefault(x => x.AttributeType.Name == "AssemblyFileVersionAttribute");
+                if (fileVersionAttribute != null)
                 {
-                    string data = Encoding.UTF8.GetString((modlibraryAssembly.MainModule.Resources.First() as EmbeddedResource).GetResourceData());
+                    version = fileVersionAttribute.ConstructorArguments.FirstOrDefault().Value as string;
+                }
 
-                    string version = null;
-                    CustomAttribute fileVersionAttribute = modlibraryAssembly.CustomAttributes.FirstOrDefault(x => x.AttributeType.Name == "AssemblyFileVersionAttribute");
-                    if (fileVersionAttribute != null)
-                    {
-                        version = fileVersionAttribute.ConstructorArguments.FirstOrDefault().Value as string;
-					}
+                if (string.IsNullOrEmpty(version))
+                {
+                    currentlyInstalledModBotVersion = null;
+                    errorMessage = null;
+                    return ModBotInstallationState.NotInstalled;
+                }
 
-                    if (string.IsNullOrEmpty(version))
-                    {
-						currentlyInstalledModBotVersion = null;
-						errorMessage = null;
-						return ModBotInstallationState.NotInstalled;
-					}
+                if (string.IsNullOrEmpty(version))
+                {
+                    currentlyInstalledModBotVersion = null;
+                    errorMessage = null;
+                    return ModBotInstallationState.NotInstalled;
+                }
 
-					if (string.IsNullOrEmpty(version))
-                    {
-						currentlyInstalledModBotVersion = null;
-						errorMessage = null;
-						return ModBotInstallationState.NotInstalled;
-					}
+                currentlyInstalledModBotVersion = version;
 
-					currentlyInstalledModBotVersion = version;
+                if (version.Contains("beta"))
+                {
+                    errorMessage = null;
+                    return ModBotInstallationState.BetaVersion;
+                }
 
-                    if (version.Contains("beta"))
-                    {
-						errorMessage = null;
-						return ModBotInstallationState.BetaVersion;
-					}
+                if (!ServerData.HasData)
+                {
+                    errorMessage = null;
+                    return ModBotInstallationState.UnableToVerify;
+                }
 
-                    if (!ServerData.HasData)
-                    {
-                        errorMessage = null;
-                        return ModBotInstallationState.UnableToVerify;
-                    }
-
-					if (isCloudVersionNewer(version, ServerData.LatestModBotVersion))
-                    {
-                        errorMessage = null;
-                        return ModBotInstallationState.OutOfDate;
-                    }
-				}
+                if (isCloudVersionNewer(version, ServerData.LatestModBotVersion))
+                {
+                    errorMessage = null;
+                    return ModBotInstallationState.OutOfDate;
+                }
             }
 
-			errorMessage = null;
-			return ModBotInstallationState.UpToDate;
+
+            errorMessage = null;
+            return ModBotInstallationState.UpToDate;
         }
 
         static bool isCloudVersionNewer(string installedVersion, string cloudVersion)
