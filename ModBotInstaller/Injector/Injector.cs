@@ -278,7 +278,7 @@ namespace ModBotInstaller.Injector
             writeModule.Write();
 
             updateProgressCallback(0.6f);
-            
+
             writeModule.Dispose();
 
             updateProgressCallback(0.8f);
@@ -320,7 +320,7 @@ namespace ModBotInstaller.Injector
             {
                 ReadWrite = true
             });
-            
+
             updateProgressCallback(0.2f);
 
             TypeDefinition copyType = copyModule.GetType(classToCopyFullName);

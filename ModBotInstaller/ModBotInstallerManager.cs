@@ -1,4 +1,5 @@
-﻿using Mono.Cecil;
+﻿using ModBotInstaller.Injector;
+using Mono.Cecil;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -12,18 +13,23 @@ namespace ModBotInstaller
 {
     public static class ModBotInstallerManager
     {
+        private const string TARGET_ASSEMBLY_VAR = "target_assembly=";
+
+        private const string MODBOT_TARGET_ASSEMBLY_VALUE = "ModBot\\ModLibrary.Preloader.dll";
+
         public static NewProgressBar ProgressBar;
 
-        public static void Install(string installationPath, GameVersionType gameVersion, Action onComplete)
+        public static void Install(string installationPath, GameReleaseType gameVersion, Action onComplete)
         {
+            SetProgress(0f);
             new Thread(delegate ()
             {
-                SetProgress(0.1f);
-
+                // get installation files from server or local computer
                 string extractedZipFilePath;
                 if (UserPreferences.Current.ShouldUseBetaPath)
                 {
                     extractedZipFilePath = UserPreferences.Current.ModBotBetaSourceDirectory;
+                    SetProgress(0.3f);
                 }
                 else
                 {
@@ -39,7 +45,7 @@ namespace ModBotInstaller
                         client.DownloadFile(ServerData.ModBotDownloadLink, zipPath);
                     }
 
-                    SetProgress(0.5f);
+                    SetProgress(0.2f);
 
                     extractedZipFilePath = Path.GetTempPath() + "modbot/";
 
@@ -49,27 +55,105 @@ namespace ModBotInstaller
 
                     ZipFile.ExtractToDirectory(zipPath, extractedZipFilePath);
                     File.Delete(zipPath); // Delete the temporary sip file
+
+                    SetProgress(0.3f);
                 }
 
-                SetProgress(0.55f);
+                // make sure the ModdedObject class is in the game (it should be there starting with version 1.12)
+                // if it's not, add it
+                string assemblyPath = Path.Combine(GameInstanceInfo.Current.ManagedDirectory, "Assembly-CSharp.dll");
+                if (!CheckModdedObjectClass(assemblyPath))
+                {
+                    Console.WriteLine("The game instance doesn't have ModdedObject class. Lets fix this");
 
-                string buildFolderName = Utils.GetModBotBuildNameForGameVersion(gameVersion);
-                string managedFolderPath = Path.Combine(installationPath, Utils.GetGameDataFolderNameForGameVersion(gameVersion), "Managed/");
-                Utils.CopyDirectory(Path.Combine(extractedZipFilePath, buildFolderName), installationPath);
-                Utils.CopyDirectory(Path.Combine(extractedZipFilePath, "libs"), managedFolderPath);
+                    string injectionClassesPath = Path.Combine(extractedZipFilePath, "libs", "InjectionClasses.dll");
+                    if (!File.Exists(injectionClassesPath))
+                    {
+                        ErrorHandler.Crash("Could not find the following file: libs/InjectionClasses.dll");
+                        return;
+                    }
 
+                    ModBotInjector.AddModdedObjectClass(assemblyPath, injectionClassesPath, delegate (float progress) { SetProgress(0.3f + (progress * 0.2f)); });
+                }
+
+                SetProgress(0.5f);
+
+                // if the user has other doorstop plugins (like bepinex),
+                // to make everything work, move the path to the plugin to modbot.ini file
+                // to modbot to mimic doorstop initialization process
+                bool replaceTargetAssemblyPath = false;
+                string otherPluginAssemblyPath = null;
+                string doorstopConfigPath = Path.Combine(installationPath, "doorstop_config.ini");
+                if (File.Exists(doorstopConfigPath) && tryParseAssemblyPath(doorstopConfigPath, out otherPluginAssemblyPath))
+                {
+                    Console.WriteLine($"Successfully read other plugin path: {otherPluginAssemblyPath}");
+                    if (otherPluginAssemblyPath.Replace('/', '\\') != MODBOT_TARGET_ASSEMBLY_VALUE)
+                    {
+                        replaceTargetAssemblyPath = true;
+                        Console.WriteLine($"Will replace the path");
+                    }
+                }
+
+                SetProgress(0.6f);
+
+                // copy release-specific files
+                // todo: add hyperdome support
+                Utils.CopyDirectory(Path.Combine(extractedZipFilePath, "modbot_dz"), installationPath);
+                string modBotFolder = Path.Combine(installationPath, "ModBot");
+                if (!Directory.Exists(modBotFolder))
+                {
+                    throw new InvalidOperationException("Something went wrong when copying Mod-Bot files!");
+                }
+
+                SetProgress(0.7f);
+
+                // copy non release-specific files
+                Utils.CopyDirectory(Path.Combine(extractedZipFilePath, "libs"), modBotFolder);
+
+                SetProgress(0.8f);
+
+                // create modbot.ini file for supporting additonal plugins
+                string iniFile = Path.Combine(installationPath, "modbot.ini");
+                if (!File.Exists(iniFile))
+                {
+                    string modbotIniFileContent = "# Mod-Bot overrides the target_assembly in doorstop_config in order to work\r\n" +
+                    "# If you need a plugin to run, type its path below\r\n" +
+                    "additional_target_assembly=";
+
+                    if (replaceTargetAssemblyPath)
+                    {
+                        modbotIniFileContent += otherPluginAssemblyPath;
+                        Console.WriteLine($"Added {otherPluginAssemblyPath} as additional target assembly");
+                    }
+
+                    File.WriteAllText(iniFile, modbotIniFileContent);
+                }
+
+                SetProgress(0.9f);
+
+                // create mods folder
+                string modsFolder = Path.Combine(installationPath, "mods");
+                if (!Directory.Exists(modsFolder))
+                {
+                    Directory.CreateDirectory(modsFolder);
+                }
+
+                SetProgress(0.95f);
+
+                // delete downloaded files
                 if (!UserPreferences.Current.ShouldUseBetaPath)
                     Utils.TryDeleteDirectory(extractedZipFilePath, true);
-
-                /*Directory.SetCurrentDirectory(managedFolderPath);
-                SetProgress(0.6f);
-                ModBotInjector.InstallModBot(managedFolderPath, delegate (float progress) { SetProgress(0.6f + (progress * 0.4f)); });*/
 
                 SetProgress(1f);
 
                 if (onComplete != null)
                     CallInMainThread(onComplete);
             }).Start();
+        }
+
+        public static void Uninstall(string installationPath)
+        {
+            throw new NotImplementedException("wip");
         }
 
         static void SetProgress(float val)
@@ -88,16 +172,9 @@ namespace ModBotInstaller
             });
         }
 
-        public static ModBotInstallationState GetModBotInstallationState(string installationPath, GameVersionType gameVersion, out string currentlyInstalledModBotVersion, out string errorMessage)
+        public static ModBotInstallationState GetModBotInstallationState(string installationPath, GameReleaseType gameVersion, out string currentlyInstalledModBotVersion, out string errorMessage)
         {
-            string dataFolderName = Utils.GetGameDataFolderNameForGameVersion(gameVersion);
-            //string assemblyPath = Path.Combine(installationPath, dataFolderName, "Managed", "Assembly-CSharp.dll");
-            string modLibraryPath = Path.Combine(installationPath, dataFolderName, "Managed", "ModLibrary.dll");
-
-            /*
-            if (!File.Exists(assemblyPath))
-                throw new Exception("This was not a valid game installation path");
-            */
+            string modLibraryPath = Path.Combine(installationPath, "ModBot", "ModLibrary.dll");
 
             if (!File.Exists(modLibraryPath))
             {
@@ -106,96 +183,53 @@ namespace ModBotInstaller
                 return ModBotInstallationState.NotInstalled;
             }
 
-            /*
-            AssemblyDefinition assembly = null;
-            try
-            {
-                assembly = AssemblyDefinition.ReadAssembly(assemblyPath);
-            }
-            catch
-            {
-                currentlyInstalledModBotVersion = null;
-                errorMessage = "Could not load one or more required files, if you have Clone Drone running, please close it and try again";
-                return ModBotInstallationState.Failed;
-            }
-            using (AssemblyDefinition assemblycharp = assembly)
-            {
-                bool containsModdedObject = assembly.MainModule.Types.Any(x => x.Name == "ModdedObject");
-                if (!containsModdedObject)
-                {
-                    currentlyInstalledModBotVersion = null;
-                    errorMessage = null;
-                    return ModBotInstallationState.NotInstalled;
-                }
-            }
-            */
+            System.Diagnostics.FileVersionInfo modLibraryFvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(modLibraryPath);
+            string version = modLibraryFvi.FileVersion;
 
-            AssemblyDefinition assembly = null;
-            try
-            {
-                assembly = AssemblyDefinition.ReadAssembly(modLibraryPath);
-            }
-            catch (IOException io) when ((io.HResult & 0x0000FFFF) == 0x000004C8) // ERROR_USER_MAPPED_FILE
-            {
-                currentlyInstalledModBotVersion = null;
-                errorMessage = "Could not load one or more required files, if you have Clone Drone running, please close it and try again";
-                return ModBotInstallationState.Failed;
-            }
-            catch // If there is an error reading the ModLibrary assembly, we assume the ModBot installation is faulty, so be mark it as not installed
+            if (string.IsNullOrEmpty(version))
             {
                 currentlyInstalledModBotVersion = null;
                 errorMessage = null;
                 return ModBotInstallationState.NotInstalled;
             }
-            using (AssemblyDefinition modlibraryAssembly = assembly)
+
+            currentlyInstalledModBotVersion = version;
+
+            if (version.Contains("beta"))
             {
-                string data = Encoding.UTF8.GetString((modlibraryAssembly.MainModule.Resources.First() as EmbeddedResource).GetResourceData());
-
-                string version = null;
-                CustomAttribute fileVersionAttribute = modlibraryAssembly.CustomAttributes.FirstOrDefault(x => x.AttributeType.Name == "AssemblyFileVersionAttribute");
-                if (fileVersionAttribute != null)
-                {
-                    version = fileVersionAttribute.ConstructorArguments.FirstOrDefault().Value as string;
-                }
-
-                if (string.IsNullOrEmpty(version))
-                {
-                    currentlyInstalledModBotVersion = null;
-                    errorMessage = null;
-                    return ModBotInstallationState.NotInstalled;
-                }
-
-                if (string.IsNullOrEmpty(version))
-                {
-                    currentlyInstalledModBotVersion = null;
-                    errorMessage = null;
-                    return ModBotInstallationState.NotInstalled;
-                }
-
-                currentlyInstalledModBotVersion = version;
-
-                if (version.Contains("beta"))
-                {
-                    errorMessage = null;
-                    return ModBotInstallationState.BetaVersion;
-                }
-
-                if (!ServerData.HasData)
-                {
-                    errorMessage = null;
-                    return ModBotInstallationState.UnableToVerify;
-                }
-
-                if (isCloudVersionNewer(version, ServerData.LatestModBotVersion))
-                {
-                    errorMessage = null;
-                    return ModBotInstallationState.OutOfDate;
-                }
+                errorMessage = null;
+                return ModBotInstallationState.BetaVersion;
             }
 
+            if (!ServerData.HasData)
+            {
+                errorMessage = null;
+                return ModBotInstallationState.UnableToVerify;
+            }
+
+            if (isCloudVersionNewer(version, ServerData.LatestModBotVersion))
+            {
+                errorMessage = null;
+                return ModBotInstallationState.OutOfDate;
+            }
 
             errorMessage = null;
             return ModBotInstallationState.UpToDate;
+        }
+
+        public static bool CheckModdedObjectClass(string assemblyPath)
+        {
+            try
+            {
+                using (AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(assemblyPath))
+                {
+                    return assembly.MainModule.Types.Any(x => x.Name == "ModdedObject");
+                }
+            }
+            catch (Exception exc)
+            {
+                return true;
+            }
         }
 
         static bool isCloudVersionNewer(string installedVersion, string cloudVersion)
@@ -216,6 +250,34 @@ namespace ModBotInstaller
             {
                 return false;
             }
+        }
+
+        static bool tryParseAssemblyPath(string iniFile, out string path)
+        {
+            path = null;
+
+            try
+            {
+                using (FileStream fileStream = File.OpenRead(iniFile))
+                using (StreamReader streamReader = new StreamReader(fileStream, Encoding.UTF8, true, 256))
+                {
+                    string line;
+                    while ((line = streamReader.ReadLine()) != null)
+                    {
+                        if (line.StartsWith(TARGET_ASSEMBLY_VAR))
+                        {
+                            path = line.Substring(TARGET_ASSEMBLY_VAR.Length);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                return false;
+            }
+
+            return !string.IsNullOrEmpty(path);
         }
     }
 }

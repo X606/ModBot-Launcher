@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ModBotInstaller
@@ -33,7 +29,7 @@ namespace ModBotInstaller
 
         public ushort Version;
         public string GameInstallationDirectory;
-        public bool IsSteamInstall;
+        public bool IsLicensedInstall;
 
         public bool EnableModBotBeta;
         public string ModBotBetaSourceDirectory; // The source directory to install the beta version from
@@ -52,8 +48,8 @@ namespace ModBotInstaller
         {
             Version = CURRENT_VERSION;
             GameInstallationDirectory = DEFAULT_INSTALL_DIRECTORY;
-            IsSteamInstall = true;
-			DontShowFirstPage = true;
+            IsLicensedInstall = true;
+            DontShowFirstPage = true;
             EnableModBotBeta = false;
             AutoUpdateMods = false;
             ResetBetaSourceDirectory();
@@ -88,16 +84,16 @@ namespace ModBotInstaller
                         AutoUpdateMods = false;
                     }
 
-					if (Version >= 3)
-					{
-						IsSteamInstall = reader.ReadBoolean();
-					}
-					else
-					{
-						IsSteamInstall = false;
-					}
+                    if (Version >= 3)
+                    {
+                        IsLicensedInstall = reader.ReadBoolean();
+                    }
+                    else
+                    {
+                        IsLicensedInstall = false;
+                    }
 
-					Version = CURRENT_VERSION;
+                    Version = CURRENT_VERSION;
                 }
             }
         }
@@ -114,7 +110,7 @@ namespace ModBotInstaller
                     writer.Write(DontShowFirstPage);
                     writer.Write(EnableModBotBeta);
                     writer.Write(AutoUpdateMods);
-                    writer.Write(IsSteamInstall);
+                    writer.Write(IsLicensedInstall);
                 }
 
                 File.WriteAllBytes(FilePath, stream.ToArray());

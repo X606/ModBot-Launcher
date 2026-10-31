@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -22,52 +23,203 @@ namespace ModBotInstaller
         {
             DirectoryInfo directory = new DirectoryInfo(path);
 
-            DirectoryInfo dataDirectory = directory.FindSubDirectory(Constants.DANGER_ZONE_STEAM_DATA_FOLDER);
-            if (dataDirectory == null)
+            string[] executables;
+            if (Constants.SUPPORT_HYPERDOME)
             {
-                dataDirectory = directory.FindSubDirectory(Constants.DANGER_ZONE_EGS_DATA_FOLDER);
-                if (dataDirectory == null)
+                executables = new string[]
                 {
-                    dataDirectory = directory.FindSubDirectory(Constants.HYPERDOME_STEAM_DATA_FOLDER);
-                    if (dataDirectory == null) return false;
-                }
+                    "Clone Drone in the Danger Zone.exe",
+                    "Clone Drone in the Danger Zone.exe.exe",
+                    "Clone Drone in the Hyperdome.exe",
+                };
+            }
+            else
+            {
+                executables = new string[]
+                {
+                    "Clone Drone in the Danger Zone.exe",
+                    "Clone Drone in the Danger Zone.exe.exe",
+                };
             }
 
-            DirectoryInfo managedDirectory = dataDirectory.FindSubDirectory("Managed");
-            if (managedDirectory == null)
+            if (directory.FindAnyFile(executables) == null)
+            {
                 return false;
+            }
 
-            FileInfo assembly = managedDirectory.FindFile("Assembly-CSharp.dll");
-            if (assembly == null)
+            string[] crashHandlers = new string[]
+            {
+                "UnityCrashHandler.exe",
+                "UnityCrashHandler64.exe",
+            };
+            if (directory.FindAnyFile(crashHandlers) == null)
+            {
                 return false;
+            }
 
             return true;
         }
 
-        public static bool IsValidBetaInstallationDirectory(string path)
+        public static bool IsValidBetaInstallationPath(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return false;
 
+            bool isDirectory = Directory.Exists(path);
+            bool isFile = File.Exists(path);
+
+            if (Constants.SUPPORT_INSTALLATION_FROM_ARCHIVE && isFile && path.EndsWith(".zip"))
+            {
+                return IsValidBetaInstallationArchive(path);
+            }
+            else if (isDirectory)
+            {
+                return IsValidBetaInstallationDirectory(path);
+            }
+            return false;
+        }
+
+        public static bool IsValidBetaInstallationDirectory(string path)
+        {
             DirectoryInfo directory = new DirectoryInfo(path);
-            if (directory == null)
-                return false;
+            return directory.FindSubDirectory("modbot_dz") != null && directory.FindSubDirectory("libs") != null;
+        }
 
-            /*DirectoryInfo dataDirectory = directory.FindSubDirectory("Clone Drone in the Danger Zone_Data");
-            if (dataDirectory == null)
-                return false;
+        public static bool IsValidBetaInstallationArchive(string path)
+        {
+            try
+            {
+                using (ZipArchive archive = ZipFile.OpenRead(path))
+                {
+                    int numFoundEntries = 0;
+                    foreach (ZipArchiveEntry entry in archive.Entries)
+                    {
+                        if (entry.FullName.Replace('\\', '/') == "libs/"
+                            || entry.FullName.Replace('\\', '/') == "modbot_dz/")
+                        {
+                            numFoundEntries++;
+                        }
+                    }
 
-            DirectoryInfo managedDirectory = dataDirectory.FindSubDirectory("Managed");
-            if (managedDirectory == null)
-                return false;
+                    if (numFoundEntries == 2)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception exc) { }
+            return false;
+        }
 
-            FileInfo assembly = managedDirectory.FindFile("ModLibrary.dll");
-            if (assembly == null)
-                return false;*/
+        public static GameInstanceInfo GetGameInstanceInfo(string installationPath, out GameReleaseType release, out GamePlatformType platform)
+        {
+            release = GameReleaseType.None;
+            platform = GamePlatformType.None;
 
-            return directory.FindSubDirectory(Constants.DANGER_ZONE_STEAM_BUILD_NAME) != null
-                && directory.FindSubDirectory(Constants.DANGER_ZONE_EGS_DATA_FOLDER) != null
-                && directory.FindSubDirectory(Constants.HYPERDOME_STEAM_BUILD_NAME) != null;
+            DirectoryInfo directory = new DirectoryInfo(installationPath);
+            if (!directory.Exists) return null;
+
+            if (directory.FindFile("Clone Drone in the Danger Zone.exe") != null)
+            {
+                release = GameReleaseType.DangerZone;
+                platform = GamePlatformType.Steam;
+            }
+            else if (directory.FindFile("Clone Drone in the Danger Zone.exe.exe") != null)
+            {
+                release = GameReleaseType.DangerZone;
+                platform = GamePlatformType.EpicGames;
+            }
+            else if (directory.FindFile("Clone Drone in the Hyperdome.exe") != null)
+            {
+                release = GameReleaseType.Hyperdome;
+                platform = GamePlatformType.Steam;
+            }
+            else return null;
+
+            return new GameInstanceInfo();
+        }
+
+        public static string GetReleaseTitle(GameReleaseType release)
+        {
+            string name;
+            if (release == GameReleaseType.DangerZone)
+            {
+                name = "Clone Drone in the Danger Zone";
+            }
+            else if (release == GameReleaseType.Hyperdome)
+            {
+                name = "Clone Drone in the Hyperdome";
+            }
+            else
+            {
+                name = "Clone Drone in the Space";
+            }
+            return name;
+        }
+
+        public static string GetPlatformName(GamePlatformType platform)
+        {
+            string name;
+            if (platform == GamePlatformType.Steam)
+            {
+                name = "Steam";
+            }
+            else if (platform == GamePlatformType.EpicGames)
+            {
+                name = "Epic Games";
+            }
+            else if (platform == GamePlatformType.XBox)
+            {
+                name = "XBOX";
+            }
+            else
+            {
+                name = "Unknown";
+            }
+            return name;
+        }
+
+        public static Color GetPlatformColor(GamePlatformType platform)
+        {
+            Color color;
+            if (platform == GamePlatformType.Steam)
+            {
+                color = Color.DodgerBlue;
+            }
+            else if (platform == GamePlatformType.EpicGames)
+            {
+                color = Color.Orange;
+            }
+            else if (platform == GamePlatformType.XBox)
+            {
+                color = Color.ForestGreen;
+            }
+            else
+            {
+                color = Color.Silver;
+            }
+            return color;
+        }
+
+        public static string GetExecutableName(GameReleaseType release, GamePlatformType platform)
+        {
+            string name;
+            if (release == GameReleaseType.DangerZone)
+            {
+                if (platform == GamePlatformType.EpicGames) name = "Clone Drone in the Danger Zone.exe.exe";
+                else name = "Clone Drone in the Danger Zone.exe";
+            }
+            else if (release == GameReleaseType.Hyperdome) name = "Clone Drone in the Hyperdome.exe";
+            else name = "Clone Drone in the Space.exe";
+            return name;
+        }
+
+        public static bool IsZipArchiveEntryADirectory(ZipArchiveEntry archiveEntry)
+        {
+            string name = archiveEntry.Name;
+            int nameLength = name.Length;
+            bool result = (nameLength > 0) && ((name[nameLength - 1] == '/') || (name[nameLength - 1] == '\\'));
+            return result;
         }
 
         public static DirectoryInfo FindSubDirectory(this DirectoryInfo directoryInfo, string name, SearchOption mode = SearchOption.TopDirectoryOnly)
@@ -80,6 +232,12 @@ namespace ModBotInstaller
         {
             FileInfo[] files = directoryInfo.GetFiles("*", mode);
             return files.FirstOrDefault((FileInfo file) => file.Name == name);
+        }
+
+        public static FileInfo FindAnyFile(this DirectoryInfo directoryInfo, string[] names, SearchOption mode = SearchOption.TopDirectoryOnly)
+        {
+            FileInfo[] files = directoryInfo.GetFiles("*", mode);
+            return files.FirstOrDefault((FileInfo file) => names.Contains(file.Name));
         }
 
         public static async Task<Stream> DownloadFileAsync(string url, int timeout = 1500)
@@ -406,36 +564,6 @@ namespace ModBotInstaller
             {
                 MessageBox.Show("An error uccured while deleting temporary files, installer cannot continue. Please report this to the Mod-Bot team.\n\nException details:\n" + e.ToString(), "Unable to remove files", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 EndCurrentProcess();
-            }
-        }
-
-        public static string GetModBotBuildNameForGameVersion(GameVersionType gameVersion)
-        {
-            switch (gameVersion)
-            {
-                case GameVersionType.DangerZone_Steam:
-                    return Constants.DANGER_ZONE_STEAM_BUILD_NAME;
-                case GameVersionType.DangerZone_EGS:
-                    return Constants.DANGER_ZONE_EGS_BUILD_NAME;
-                case GameVersionType.Hyperdome_Steam:
-                    return Constants.HYPERDOME_STEAM_BUILD_NAME;
-                default:
-                    throw new NotImplementedException($"{gameVersion} not supported");
-            }
-        }
-
-        public static string GetGameDataFolderNameForGameVersion(GameVersionType gameVersion)
-        {
-            switch (gameVersion)
-            {
-                case GameVersionType.DangerZone_Steam:
-                    return Constants.DANGER_ZONE_STEAM_DATA_FOLDER;
-                case GameVersionType.DangerZone_EGS:
-                    return Constants.DANGER_ZONE_EGS_DATA_FOLDER;
-                case GameVersionType.Hyperdome_Steam:
-                    return Constants.HYPERDOME_STEAM_DATA_FOLDER;
-                default:
-                    throw new NotImplementedException($"{gameVersion} not supported");
             }
         }
     }

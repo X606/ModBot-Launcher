@@ -1,15 +1,9 @@
-﻿using ModBotInstaller.Properties;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ModBotInstaller
@@ -24,7 +18,7 @@ namespace ModBotInstaller
         bool _hasInitializedInstalledModsView = false;
 
         ModBotInstallationState _installationState;
-        
+
         int _numCurrentlyLoadingModItems;
         int _numCurrentlyUpdatingModItems;
 
@@ -66,12 +60,12 @@ namespace ModBotInstaller
             string installedModBotVersionString;
             do
             {
-                _installationState = ModBotInstallerManager.GetModBotInstallationState(UserPreferences.Current.GameInstallationDirectory, GameVersionType.DangerZone_Steam, out installedModBotVersionString, out string errorMessage);
+                _installationState = ModBotInstallerManager.GetModBotInstallationState(UserPreferences.Current.GameInstallationDirectory, GameReleaseType.DangerZone, out installedModBotVersionString, out string errorMessage);
 
                 if (_installationState == ModBotInstallationState.Failed)
                 {
                     DialogResult dialogResult = MessageBox.Show(errorMessage, "Error", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
-                    
+
                     if (dialogResult == DialogResult.Cancel)
                     {
                         // End current process
@@ -152,9 +146,9 @@ namespace ModBotInstaller
                 Reinstall.Text = "Start (non beta)";
             }
 
-            InstallButton.Visible = _numCurrentlyLoadingModItems == 0 && _numCurrentlyUpdatingModItems == 0 && (_missingModDependencies == null || _missingModDependencies.Count == 0);
-            Reinstall.Visible = _numCurrentlyLoadingModItems == 0 && _numCurrentlyUpdatingModItems == 0 && (_missingModDependencies == null || _missingModDependencies.Count == 0);
-            installedModsLoading.Visible = _numCurrentlyLoadingModItems > 0;
+            InstallButton.Visible = _numCurrentlyUpdatingModItems == 0;
+            Reinstall.Visible = _numCurrentlyUpdatingModItems == 0;
+            installedModsLoading.Visible = _numCurrentlyLoadingModItems != 0;
 
             if (!_hasInitializedInstalledModsView && _installationState != ModBotInstallationState.Failed && _installationState != ModBotInstallationState.NotInstalled)
                 initializeInstalledModsView();
@@ -173,7 +167,7 @@ namespace ModBotInstaller
 
             _hasInitializedInstalledModsView = true;
 
-            DirectoryInfo modsFolder = new DirectoryInfo(UserPreferences.Current.GameInstallationDirectory + "/mods");
+            DirectoryInfo modsFolder = new DirectoryInfo(Path.Combine(UserPreferences.Current.GameInstallationDirectory, "mods"));
             _installedModsUIItems = new List<InstalledModsPanelUIItem>();
             _missingModDependencies = new HashSet<string>();
 
@@ -267,13 +261,24 @@ namespace ModBotInstaller
 
         public void StartGameAndExit()
         {
-            if (UserPreferences.Current.IsSteamInstall)
+            if (UserPreferences.Current.IsLicensedInstall)
             {
-                Process.Start("steam://rungameid/" + Constants.DANGER_ZONE_STEAMAPPID); // Start Clone Drone via Steam
+                GamePlatformType platform = GameInstanceInfo.Current.Platform;
+                GameReleaseType release = GameInstanceInfo.Current.Release;
+                switch (platform)
+                {
+                    case GamePlatformType.Steam:
+                        uint appId = release == GameReleaseType.DangerZone ? Constants.DANGER_ZONE_STEAMAPPID : Constants.HYPERDOME_STEAMAPPID;
+                        Process.Start("steam://rungameid/" + appId);
+                        break;
+                    case GamePlatformType.EpicGames:
+                        Process.Start(Constants.DANGER_ZONE_EGS_RUN_COMMAND);
+                        break;
+                }
             }
             else // we're on a non steam install, probably either pirated or maybe xbox?
             {
-                string path = UserPreferences.Current.GameInstallationDirectory + "/Clone Drone in the Danger Zone.exe";
+                string path = Path.Combine(UserPreferences.Current.GameInstallationDirectory, "Clone Drone in the Danger Zone.exe");
 
                 bool startedGame = false;
                 if (File.Exists(path))
@@ -282,8 +287,8 @@ namespace ModBotInstaller
 
                     try
                     {
-						Process.Start(path);
-					}
+                        Process.Start(path);
+                    }
                     catch
                     {
                         startedGame = false;
@@ -293,8 +298,8 @@ namespace ModBotInstaller
                 if (!startedGame)
                 {
                     MessageBox.Show("Unable to automatically start the game, please start it manually instead", "Unable to start game", MessageBoxButtons.OK);
-				}
-			}
+                }
+            }
             Application.Exit();
         }
 
@@ -302,6 +307,7 @@ namespace ModBotInstaller
         {
             if ((_installationState != ModBotInstallationState.UpToDate && _installationState != ModBotInstallationState.BetaVersion) || UserPreferences.Current.ShouldUseBetaPath)
             {
+                installedModsLoading.Hide();
                 StatusLabel.Hide();
                 installedModsView.Hide();
                 installedModsTitle.Hide();
@@ -314,7 +320,7 @@ namespace ModBotInstaller
                 ProgressBar.Show();
                 installingModBotLabel.Show();
                 ModBotInstallerManager.ProgressBar = ProgressBar;
-                ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, GameVersionType.DangerZone_Steam, OnInstallFinished);
+                ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, GameReleaseType.DangerZone, OnInstallFinished);
             }
             else
             {
@@ -327,6 +333,7 @@ namespace ModBotInstaller
             if (UserPreferences.Current.ShouldUseBetaPath)
                 UserPreferences.Current.ResetBetaSourceDirectory();
 
+            installedModsLoading.Hide();
             StatusLabel.Hide();
             installedModsView.Hide();
             installedModsTitle.Hide();
@@ -339,7 +346,7 @@ namespace ModBotInstaller
             ProgressBar.Show();
             installingModBotLabel.Show();
             ModBotInstallerManager.ProgressBar = ProgressBar;
-            ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, GameVersionType.DangerZone_Steam, OnInstallFinished);
+            ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, GameReleaseType.DangerZone, OnInstallFinished);
         }
 
         private void modBotSettingsButton_Click(object sender, EventArgs e)

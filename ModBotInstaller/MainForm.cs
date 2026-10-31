@@ -1,15 +1,16 @@
 ﻿using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Net;
 using System.Windows.Forms;
 
 namespace ModBotInstaller
 {
     public partial class MainForm : Form
     {
+        private List<GameInstancesPanelUIItem> _gameInstanceItems;
+
         public MainForm()
         {
             InitializeComponent();
@@ -47,6 +48,11 @@ namespace ModBotInstaller
             // Disables maximizing the window by setting the maximized size to the default size
             MaximizedBounds = Bounds;
 
+            detectedGamesView.AutoScroll = false;
+            detectedGamesView.HorizontalScroll.Maximum = 0;
+            detectedGamesView.VerticalScroll.Visible = false;
+            detectedGamesView.AutoScroll = true;
+
             if (File.Exists(UserPreferences.FilePath))
             {
                 UserPreferences.Current = new UserPreferences(File.ReadAllBytes(UserPreferences.FilePath));
@@ -59,88 +65,132 @@ namespace ModBotInstaller
 
             UserPreferences.Current.MigrateFromOldSaveFormatsAndRemoveFiles();
 
-            if (tryGetValidGameInstallDirectory())
-            {
-                if (UserPreferences.Current.DontShowFirstPage)
-                    continueToNextWindow();
-            }
+            tryGetValidGameInstallDirectory();
         }
 
-        bool tryGetValidGameInstallDirectory()
+        private void tryGetValidGameInstallDirectory()
         {
-            if (validateCurrentInstallationDirectory())
-                return true;
+            detectedGamesLabel.Visible = false;
+            detectedGamesView.Visible = false;
 
-            if (SteamInstallLocationFinder.TryGetInstallPath(out string steamInstallPath))
+            int windowHeight = 160;
+            GameInstanceInfo customGameInstance = new GameInstanceInfo(UserPreferences.Current.GameInstallationDirectory);
+            List<GameInstanceInfo> games = GameInstanceInfo.FindAllGameInstancesOnComputer();
+            bool hasSeveralGames = games.Count > 1;
+
+            if (games.Count == 0)
             {
-				if (Utils.IsValidCloneDroneInstallationDirectory(steamInstallPath))
-				{
-					UserPreferences.Current.IsSteamInstall = true;
-					UserPreferences.Current.GameInstallationDirectory = steamInstallPath;
-					UserPreferences.Current.SaveToFile();
-					return true;
-				}
-			}
+                SelectGameInstance(customGameInstance.IsValid ? customGameInstance : null);
+                setHeight(windowHeight);
+                return;
+            }
 
-            return false;
+            SelectGameInstance(customGameInstance.IsValid ? customGameInstance : games[0],
+                !customGameInstance.IsValid || UserPreferences.Current.IsLicensedInstall);
+
+            if (hasSeveralGames)
+            {
+                windowHeight = 390;
+                detectedGamesLabel.Visible = true;
+                detectedGamesView.Visible = true;
+
+                _gameInstanceItems = new List<GameInstancesPanelUIItem>();
+                foreach (GameInstanceInfo game in games)
+                {
+                    _gameInstanceItems.Add(new GameInstancesPanelUIItem(game, detectedGamesView, this));
+                }
+            }
+
+            setHeight(windowHeight);
         }
 
-        bool validateCurrentInstallationDirectory(bool refreshState = true)
+        public void SelectGameInstance(GameInstanceInfo gameInstance, bool isLicensed = true)
         {
-            if (Utils.IsValidCloneDroneInstallationDirectory(UserPreferences.Current.GameInstallationDirectory))
+            GameInstanceInfo.Current = gameInstance;
+            if (_gameInstanceItems != null)
             {
-                if (refreshState)
-                    setPickerState(true);
-
-                return true;
+                foreach (GameInstancesPanelUIItem game in _gameInstanceItems)
+                    game.RefreshState();
             }
-            else
+
+            if (gameInstance == null)
             {
-                if (refreshState)
-                    setPickerState(false);
-
-                return false;
+                setPickerState(false);
+                return;
             }
+
+            UserPreferences.Current.IsLicensedInstall = isLicensed;
+            UserPreferences.Current.GameInstallationDirectory = gameInstance.InstallationPath;
+            UserPreferences.Current.SaveToFile();
+
+            setPickerState(true);
         }
 
-        void setPickerState(bool isValid)
+        private void setPickerState(bool isValid)
         {
             if (isValid)
             {
+                BigTitle.Text = "Selected game install location";
                 BigTitle.ForeColor = Color.FromArgb(124, 252, 0);
-                BigTitle.Text = "Game install location detected";
                 InstallLocationDisplay.Text = UserPreferences.Current.GameInstallationDirectory;
-                ChangeLocationButton.Text = "Change game install directory";
                 ContinueButton.Enabled = true;
             }
             else
             {
-                BigTitle.ForeColor = Color.FromArgb(252, 124, 0);
                 BigTitle.Text = "Game install location not found";
+                BigTitle.ForeColor = Color.FromArgb(252, 124, 0);
                 InstallLocationDisplay.Text = "Please provide a valid installation path";
-                ChangeLocationButton.Text = "Specify game install directory";
                 ContinueButton.Enabled = false;
             }
         }
 
+        private void setHeight(int height)
+        {
+            Size size = Size;
+            size.Height = height;
+            Size = size;
+        }
+
+        private void continueToNextWindow()
+        {
+            UserPreferences.Current.SaveToFile();
+
+            Form2 form = new Form2();
+            form.Show();
+
+            Close();
+        }
+
         private void ChangeLocationButton_Click(object sender, EventArgs e)
         {
-            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
-            dialog.InitialDirectory = "C:/";
-            dialog.IsFolderPicker = true;
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog
+            {
+                InitialDirectory = "C:/",
+                IsFolderPicker = true
+            };
+
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                if (Utils.IsValidCloneDroneInstallationDirectory(dialog.FileName))
+                GameInstanceInfo customGameInstance = new GameInstanceInfo(dialog.FileName);
+                if (customGameInstance.IsValid)
                 {
-                    UserPreferences.Current.IsSteamInstall = false;
-					UserPreferences.Current.GameInstallationDirectory = dialog.FileName;
-                    UserPreferences.Current.SaveToFile();
+                    // if user selects licensed game in hard way
+                    bool isLicensed = false;
+                    foreach (GameInstancesPanelUIItem gameInstanceElement in _gameInstanceItems)
+                    {
+                        if (GameInstanceInfo.Compare(gameInstanceElement.GameInfo, customGameInstance))
+                        {
+                            isLicensed = true;
+                            customGameInstance = gameInstanceElement.GameInfo;
+                            break;
+                        }
+                    }
 
-                    setPickerState(true);
+                    SelectGameInstance(customGameInstance, isLicensed);
                 }
                 else
                 {
-                    setPickerState(false);
+                    SelectGameInstance(null);
                 }
             }
         }
@@ -153,16 +203,6 @@ namespace ModBotInstaller
         private void ContinueButton_Click(object sender, EventArgs e)
         {
             continueToNextWindow();
-        }
-
-        void continueToNextWindow()
-        {
-            UserPreferences.Current.SaveToFile();
-
-            Form2 form = new Form2();
-            form.Show();
-
-            Close();
         }
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)

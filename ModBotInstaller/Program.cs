@@ -1,12 +1,4 @@
-﻿using Microsoft.Win32;
-using ModBotInstaller.Properties;
-using Newtonsoft.Json;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using System.Windows.Forms;
 
 namespace ModBotInstaller

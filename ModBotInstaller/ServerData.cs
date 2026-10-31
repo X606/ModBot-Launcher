@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Newtonsoft.Json;
 
 namespace ModBotInstaller
 {
@@ -26,7 +25,7 @@ namespace ModBotInstaller
             GithubTagData[] tags = JsonConvert.DeserializeObject<GithubTagData[]>(data);
 
             Version maxVersion = new Version(0, 0, 0, 0);
-            foreach(GithubTagData tag in tags)
+            foreach (GithubTagData tag in tags)
             {
                 string filteredCurrentVersion = tag.name.Trim().Trim('v');
 
@@ -57,17 +56,17 @@ namespace ModBotInstaller
             string[] data = new string[2];
             Thread[] threads = new Thread[2];
 
-            for(int i = 0; i < 2; i++)
+            for (int i = 0; i < 2; i++)
             {
                 threads[i] = new Thread(delegate (object indexObj)
                 {
                     int index = (int)indexObj;
                     results[index] = Utils.SendWebRequest(links[index], out data[index], 1500);
-				});
+                });
                 threads[i].Start(i);
-			}
-            
-            for(int i = 0; i < 2; i++)
+            }
+
+            for (int i = 0; i < 2; i++)
             {
                 threads[i].Join();
             }
@@ -76,8 +75,8 @@ namespace ModBotInstaller
             {
                 LatestModBotVersion = GetLatestVersionFromGithubTagsData(data[0]).ToString();
                 LatestModBotLauncherVersion = GetLatestVersionFromGithubTagsData(data[1]).ToString();
-				HasData = true;
-			}
+                HasData = true;
+            }
             else
             {
                 // Set to default values

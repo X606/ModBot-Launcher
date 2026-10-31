@@ -68,7 +68,7 @@ namespace ModBotInstaller
             this.InstallButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.InstallButton.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.InstallButton.ForeColor = System.Drawing.Color.White;
-            this.InstallButton.Location = new System.Drawing.Point(387, 451);
+            this.InstallButton.Location = new System.Drawing.Point(391, 473);
             this.InstallButton.Name = "InstallButton";
             this.InstallButton.Size = new System.Drawing.Size(118, 23);
             this.InstallButton.TabIndex = 8;
@@ -84,7 +84,7 @@ namespace ModBotInstaller
             this.CloseButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CloseButton.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.CloseButton.ForeColor = System.Drawing.Color.White;
-            this.CloseButton.Location = new System.Drawing.Point(12, 451);
+            this.CloseButton.Location = new System.Drawing.Point(9, 473);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(76, 23);
             this.CloseButton.TabIndex = 9;
@@ -98,7 +98,7 @@ namespace ModBotInstaller
             this.StatusLabel.ForeColor = System.Drawing.Color.White;
             this.StatusLabel.Location = new System.Drawing.Point(12, 9);
             this.StatusLabel.Name = "StatusLabel";
-            this.StatusLabel.Size = new System.Drawing.Size(493, 33);
+            this.StatusLabel.Size = new System.Drawing.Size(493, 42);
             this.StatusLabel.TabIndex = 10;
             this.StatusLabel.Text = "Message";
             this.StatusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -108,7 +108,7 @@ namespace ModBotInstaller
             this.LocalVersionLabel.AutoSize = true;
             this.LocalVersionLabel.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LocalVersionLabel.ForeColor = System.Drawing.Color.White;
-            this.LocalVersionLabel.Location = new System.Drawing.Point(13, 404);
+            this.LocalVersionLabel.Location = new System.Drawing.Point(5, 416);
             this.LocalVersionLabel.Name = "LocalVersionLabel";
             this.LocalVersionLabel.Size = new System.Drawing.Size(105, 15);
             this.LocalVersionLabel.TabIndex = 11;
@@ -119,7 +119,7 @@ namespace ModBotInstaller
             this.LatestVersionLabel.AutoSize = true;
             this.LatestVersionLabel.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LatestVersionLabel.ForeColor = System.Drawing.Color.White;
-            this.LatestVersionLabel.Location = new System.Drawing.Point(12, 428);
+            this.LatestVersionLabel.Location = new System.Drawing.Point(4, 440);
             this.LatestVersionLabel.Name = "LatestVersionLabel";
             this.LatestVersionLabel.Size = new System.Drawing.Size(112, 15);
             this.LatestVersionLabel.TabIndex = 12;
@@ -133,7 +133,7 @@ namespace ModBotInstaller
             this.Reinstall.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.Reinstall.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Reinstall.ForeColor = System.Drawing.Color.White;
-            this.Reinstall.Location = new System.Drawing.Point(263, 451);
+            this.Reinstall.Location = new System.Drawing.Point(263, 473);
             this.Reinstall.Name = "Reinstall";
             this.Reinstall.Size = new System.Drawing.Size(118, 23);
             this.Reinstall.TabIndex = 14;
@@ -148,10 +148,10 @@ namespace ModBotInstaller
             this.installedModsView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.installedModsView.Controls.Add(this.installedModsItem_TEMPLATE);
             this.installedModsView.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-            this.installedModsView.Location = new System.Drawing.Point(9, 92);
+            this.installedModsView.Location = new System.Drawing.Point(8, 75);
             this.installedModsView.Name = "installedModsView";
             this.installedModsView.Padding = new System.Windows.Forms.Padding(5);
-            this.installedModsView.Size = new System.Drawing.Size(500, 300);
+            this.installedModsView.Size = new System.Drawing.Size(500, 328);
             this.installedModsView.TabIndex = 15;
             this.installedModsView.WrapContents = false;
             // 
@@ -309,9 +309,9 @@ namespace ModBotInstaller
             // 
             this.installedModsTitle.Font = new System.Drawing.Font("Consolas", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.installedModsTitle.ForeColor = System.Drawing.Color.White;
-            this.installedModsTitle.Location = new System.Drawing.Point(9, 63);
+            this.installedModsTitle.Location = new System.Drawing.Point(6, 51);
             this.installedModsTitle.Name = "installedModsTitle";
-            this.installedModsTitle.Size = new System.Drawing.Size(130, 26);
+            this.installedModsTitle.Size = new System.Drawing.Size(130, 22);
             this.installedModsTitle.TabIndex = 17;
             this.installedModsTitle.Text = "Installed mods:";
             this.installedModsTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -324,7 +324,7 @@ namespace ModBotInstaller
             this.modBotSettingsButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.modBotSettingsButton.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.modBotSettingsButton.ForeColor = System.Drawing.Color.White;
-            this.modBotSettingsButton.Location = new System.Drawing.Point(94, 451);
+            this.modBotSettingsButton.Location = new System.Drawing.Point(94, 473);
             this.modBotSettingsButton.Name = "modBotSettingsButton";
             this.modBotSettingsButton.Size = new System.Drawing.Size(118, 23);
             this.modBotSettingsButton.TabIndex = 19;
@@ -336,11 +336,11 @@ namespace ModBotInstaller
             // 
             this.installingModBotLabel.AutoSize = true;
             this.installingModBotLabel.CausesValidation = false;
-            this.installingModBotLabel.Font = new System.Drawing.Font("Consolas", 11F);
+            this.installingModBotLabel.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
             this.installingModBotLabel.ForeColor = System.Drawing.Color.White;
-            this.installingModBotLabel.Location = new System.Drawing.Point(164, 189);
+            this.installingModBotLabel.Location = new System.Drawing.Point(159, 215);
             this.installingModBotLabel.Name = "installingModBotLabel";
-            this.installingModBotLabel.Size = new System.Drawing.Size(176, 18);
+            this.installingModBotLabel.Size = new System.Drawing.Size(198, 19);
             this.installingModBotLabel.TabIndex = 20;
             this.installingModBotLabel.Text = "Installing Mod-Bot...";
             this.installingModBotLabel.Visible = false;
@@ -349,12 +349,12 @@ namespace ModBotInstaller
             // 
             this.installedModsLoading.AutoSize = true;
             this.installedModsLoading.Font = new System.Drawing.Font("Consolas", 11F);
-            this.installedModsLoading.ForeColor = System.Drawing.Color.White;
-            this.installedModsLoading.Location = new System.Drawing.Point(194, 67);
+            this.installedModsLoading.ForeColor = System.Drawing.Color.Silver;
+            this.installedModsLoading.Location = new System.Drawing.Point(285, 53);
             this.installedModsLoading.Name = "installedModsLoading";
-            this.installedModsLoading.Size = new System.Drawing.Size(128, 18);
+            this.installedModsLoading.Size = new System.Drawing.Size(224, 18);
             this.installedModsLoading.TabIndex = 21;
-            this.installedModsLoading.Text = "Loading mods...";
+            this.installedModsLoading.Text = "Checking for mod updates...";
             this.installedModsLoading.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.installedModsLoading.Visible = false;
             // 
@@ -363,7 +363,7 @@ namespace ModBotInstaller
             this.ProgressBar.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.ProgressBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(26)))), ((int)(((byte)(26)))));
             this.ProgressBar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(104)))), ((int)(((byte)(0)))));
-            this.ProgressBar.Location = new System.Drawing.Point(12, 216);
+            this.ProgressBar.Location = new System.Drawing.Point(12, 241);
             this.ProgressBar.Name = "ProgressBar";
             this.ProgressBar.Progress = 0F;
             this.ProgressBar.Size = new System.Drawing.Size(493, 23);
@@ -378,9 +378,9 @@ namespace ModBotInstaller
             this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button1.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button1.ForeColor = System.Drawing.Color.White;
-            this.button1.Location = new System.Drawing.Point(263, 451);
+            this.button1.Location = new System.Drawing.Point(263, 473);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(242, 23);
+            this.button1.Size = new System.Drawing.Size(246, 23);
             this.button1.TabIndex = 22;
             this.button1.Text = "Install all 8252 missing dependencies";
             this.button1.UseMnemonic = false;
@@ -393,10 +393,9 @@ namespace ModBotInstaller
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnablePreventFocusChange;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(22)))), ((int)(((byte)(22)))));
-            this.ClientSize = new System.Drawing.Size(517, 486);
+            this.ClientSize = new System.Drawing.Size(517, 504);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.installedModsLoading);
-            this.Controls.Add(this.installingModBotLabel);
             this.Controls.Add(this.modBotSettingsButton);
             this.Controls.Add(this.installedModsTitle);
             this.Controls.Add(this.installedModsView);
@@ -407,6 +406,7 @@ namespace ModBotInstaller
             this.Controls.Add(this.CloseButton);
             this.Controls.Add(this.InstallButton);
             this.Controls.Add(this.ProgressBar);
+            this.Controls.Add(this.installingModBotLabel);
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));

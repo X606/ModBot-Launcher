@@ -89,6 +89,65 @@ namespace ModBotInstaller.Injector
 
             updateInjectorProgress(1f);
         }
+
+        public static void AddModdedObjectClass(string managedFolderPath, string injectionClassesPath, Action<float> updateInjectorProgress)
+        {
+            updateInjectorProgress(0f);
+
+            string assemblyPath = Path.Combine(managedFolderPath, "Assembly-CSharp.dll");
+
+            Console.WriteLine("Injecting ModdedObject class to the game...");
+            if (!File.Exists(injectionClassesPath))
+            {
+                ErrorHandler.Crash("Could not find dll at path \"" + injectionClassesPath + "\"");
+                return;
+            }
+
+            Console.WriteLine("Finding classes to inject...");
+            ModuleDefinition module = ModuleDefinition.ReadModule(injectionClassesPath, new ReaderParameters()
+            {
+                ReadWrite = true
+            });
+
+            updateInjectorProgress(0.2f);
+
+            List<TypeDefinition> types = module.GetTypes().ToList();
+            string typeFullName = null;
+            string typeName = null;
+            for (int i = 0; i < types.Count; i++)
+            {
+                if (types[i].Namespace != "InjectionClasses")
+                    continue;
+
+                if (types[i].Name == "ModdedObject")
+                {
+                    typeFullName = types[i].FullName;
+                    typeName = types[i].Name;
+                    Console.WriteLine("Found class to inject!");
+                    break;
+                }
+            }
+            module.Dispose();
+
+            if (typeName == null || typeFullName == null)
+            {
+                ErrorHandler.Crash("Could not find the required class to inject");
+                return;
+            }
+
+            Console.WriteLine("Injecting the class...");
+
+            updateInjectorProgress(0.4f);
+
+            Injector.AddClassToAssembly(assemblyPath, typeName, injectionClassesPath, typeFullName, delegate (float progress)
+            {
+                updateInjectorProgress(Utils.Lerp(0.4f, 1f, progress));
+            });
+
+            Console.WriteLine("Finished injecting the class");
+
+            updateInjectorProgress(1f);
+        }
     }
 
 
@@ -96,7 +155,7 @@ namespace ModBotInstaller.Injector
     {
         public static void Crash(string errorMessage)
         {
-            MessageBox.Show("ERRROR: " + errorMessage, "Error");
+            MessageBox.Show("ERROR: " + errorMessage, "Error");
 
             MessageBox.Show("WARNING: Your game files may have been corrupted, please verify your game files before starting the game!!!");
             Application.Exit();

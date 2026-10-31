@@ -40,7 +40,7 @@ namespace ModBotInstaller
             e.Graphics.FillRectangle(_backgroundBrush, 0, 0, rec.Width, rec.Height);
 
             rec.Width = (int)(rec.Width * ((double)Value / Maximum)) - (Padding * 2);
-            
+
             rec.Height -= Padding * 2;
             e.Graphics.FillRectangle(_orangeBrush, Padding, Padding, rec.Width, rec.Height);
         }

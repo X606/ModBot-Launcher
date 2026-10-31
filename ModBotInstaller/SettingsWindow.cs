@@ -1,12 +1,6 @@
 ﻿using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ModBotInstaller
@@ -30,7 +24,7 @@ namespace ModBotInstaller
             betaSourceDirectory = UserPreferences.Current.ModBotBetaSourceDirectory;
             refreshBetaLocationItemsVisible();
             autoUpdateModsCheckbox.Checked = UserPreferences.Current.AutoUpdateMods;
-            isSteamInstallCheckBox.Checked = UserPreferences.Current.IsSteamInstall;
+            isSteamInstallCheckBox.Checked = UserPreferences.Current.IsLicensedInstall;
         }
 
         private void cancelButton_Click(object sender, EventArgs e)
@@ -42,9 +36,9 @@ namespace ModBotInstaller
         {
             UserPreferences.Current.DontShowFirstPage = skipFirstPageCheckbox.Checked;
             UserPreferences.Current.EnableModBotBeta = enableLocalBetaVersionCheckbox.Checked;
-            UserPreferences.Current.ModBotBetaSourceDirectory = Utils.IsValidBetaInstallationDirectory(betaSourceDirectory) ? betaSourceDirectory : string.Empty;
+            UserPreferences.Current.ModBotBetaSourceDirectory = Utils.IsValidBetaInstallationPath(betaSourceDirectory) ? betaSourceDirectory : string.Empty;
             UserPreferences.Current.AutoUpdateMods = autoUpdateModsCheckbox.Checked;
-            UserPreferences.Current.IsSteamInstall = isSteamInstallCheckBox.Checked;
+            UserPreferences.Current.IsLicensedInstall = isSteamInstallCheckBox.Checked;
             UserPreferences.Current.SaveToFile();
 
             closeWindow();
@@ -64,20 +58,22 @@ namespace ModBotInstaller
         {
             changeBetaLocationButton.Visible = enableLocalBetaVersionCheckbox.Checked;
             changeBetaLocationNoteLabel.Visible = enableLocalBetaVersionCheckbox.Checked;
-            setChangeBetaLabel(Utils.IsValidBetaInstallationDirectory(betaSourceDirectory));
+            setChangeBetaLabel(Utils.IsValidBetaInstallationPath(betaSourceDirectory));
         }
 
         private void changeBetaLocationButton_Click(object sender, EventArgs e)
         {
-            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
-            dialog.InitialDirectory = !string.IsNullOrEmpty(betaSourceDirectory) ? betaSourceDirectory : "C:/Program Files (x86)/Steam/steamapps/common";
-            dialog.IsFolderPicker = true;
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog
+            {
+                InitialDirectory = !string.IsNullOrEmpty(betaSourceDirectory) ? betaSourceDirectory : "C:/Program Files (x86)/Steam/steamapps/common",
+                IsFolderPicker = true
+            };
 
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
                 betaSourceDirectory = dialog.FileName;
 
-                if (Utils.IsValidBetaInstallationDirectory(dialog.FileName))
+                if (Utils.IsValidBetaInstallationPath(dialog.FileName))
                 {
                     setChangeBetaLabel(true);
                 }
@@ -102,9 +98,9 @@ namespace ModBotInstaller
             }
         }
 
-		private void isSteamInstall_CheckedChanged(object sender, EventArgs e)
-		{
+        private void isSteamInstall_CheckedChanged(object sender, EventArgs e)
+        {
 
-		}
-	}
+        }
+    }
 }
