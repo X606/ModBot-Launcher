@@ -132,11 +132,12 @@ namespace ModBotInstaller
                     StatusLabel.ForeColor = Color.FromArgb(255, 0, 255);
                     break;
                 case ModBotInstallationState.UnableToVerify:
-                    StatusLabel.Text = "Unable to check latest Mod-Bot version";
-                    StatusLabel.ForeColor = Color.FromArgb(125, 0, 125);
                     InstallButton.Show();
                     InstallButton.Text = "Start Game";
-                    Reinstall.Hide();
+                    Reinstall.Show();
+                    Reinstall.Text = "Reinstall";
+                    StatusLabel.Text = "Unable to check latest Mod-Bot version";
+                    StatusLabel.ForeColor = Color.FromArgb(125, 0, 125);
                     break;
             }
 
@@ -156,6 +157,9 @@ namespace ModBotInstaller
 
         void initializeInstalledModsView()
         {
+            DirectoryInfo modsFolder = new DirectoryInfo(Path.Combine(UserPreferences.Current.GameInstallationDirectory, "mods"));
+            if (!modsFolder.Exists) return;
+
             // I have no clue why, but for some ungodly reason this is what you have to do to disable the HORIZONTAL scroll slider....
             installedModsView.AutoScroll = false;
             installedModsView.HorizontalScroll.Maximum = 0;
@@ -167,13 +171,10 @@ namespace ModBotInstaller
 
             _hasInitializedInstalledModsView = true;
 
-            DirectoryInfo modsFolder = new DirectoryInfo(Path.Combine(UserPreferences.Current.GameInstallationDirectory, "mods"));
             _installedModsUIItems = new List<InstalledModsPanelUIItem>();
             _missingModDependencies = new HashSet<string>();
 
-            DirectoryInfo[] subDirectories = modsFolder.GetDirectories();
-
-            foreach (DirectoryInfo modDirectory in subDirectories)
+            foreach (DirectoryInfo modDirectory in modsFolder.GetDirectories())
             {
                 FileInfo modInfoFile = modDirectory.FindFile("ModInfo.json");
                 if (modInfoFile != null)
@@ -303,36 +304,8 @@ namespace ModBotInstaller
             Application.Exit();
         }
 
-        private void InstallButton_Click(object sender, EventArgs e)
+        public void ShowInstallationVisuals()
         {
-            if ((_installationState != ModBotInstallationState.UpToDate && _installationState != ModBotInstallationState.BetaVersion) || UserPreferences.Current.ShouldUseBetaPath)
-            {
-                installedModsLoading.Hide();
-                StatusLabel.Hide();
-                installedModsView.Hide();
-                installedModsTitle.Hide();
-                InstallButton.Hide();
-                CloseButton.Hide();
-                Reinstall.Hide();
-                modBotSettingsButton.Hide();
-                LocalVersionLabel.Hide();
-                LatestVersionLabel.Hide();
-                ProgressBar.Show();
-                installingModBotLabel.Show();
-                ModBotInstallerManager.ProgressBar = ProgressBar;
-                ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, GameReleaseType.DangerZone, OnInstallFinished);
-            }
-            else
-            {
-                StartGameAndExit();
-            }
-        }
-
-        private void Reinstall_Click(object sender, EventArgs e)
-        {
-            if (UserPreferences.Current.ShouldUseBetaPath)
-                UserPreferences.Current.ResetBetaSourceDirectory();
-
             installedModsLoading.Hide();
             StatusLabel.Hide();
             installedModsView.Hide();
@@ -344,9 +317,47 @@ namespace ModBotInstaller
             LocalVersionLabel.Hide();
             LatestVersionLabel.Hide();
             ProgressBar.Show();
+            ProgressBar.Value = 0;
             installingModBotLabel.Show();
+        }
+
+        public void ShowDefaultVisuals()
+        {
+            installedModsLoading.Show();
+            StatusLabel.Show();
+            installedModsView.Show();
+            installedModsTitle.Show();
+            InstallButton.Show();
+            CloseButton.Show();
+            Reinstall.Show();
+            modBotSettingsButton.Show();
+            LocalVersionLabel.Show();
+            LatestVersionLabel.Show();
+            ProgressBar.Hide();
+            installingModBotLabel.Hide();
+
+            refreshItemsBasedOnCurrentState();
+        }
+
+        private void InstallButton_Click(object sender, EventArgs e)
+        {
+            if (_installationState == ModBotInstallationState.NotInstalled || UserPreferences.Current.ShouldUseBetaPath)
+            {
+                ShowInstallationVisuals();
+                ModBotInstallerManager.ProgressBar = ProgressBar;
+                ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, UserPreferences.Current.ShouldUseBetaPath, GameReleaseType.DangerZone, this, OnInstallFinished);
+            }
+            else
+            {
+                StartGameAndExit();
+            }
+        }
+
+        private void Reinstall_Click(object sender, EventArgs e)
+        {
+            ShowInstallationVisuals();
             ModBotInstallerManager.ProgressBar = ProgressBar;
-            ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, GameReleaseType.DangerZone, OnInstallFinished);
+            ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, false, GameReleaseType.DangerZone, this, OnInstallFinished);
         }
 
         private void modBotSettingsButton_Click(object sender, EventArgs e)

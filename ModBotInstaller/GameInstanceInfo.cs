@@ -20,15 +20,19 @@ namespace ModBotInstaller
 
         public bool IsLicensed;
 
+        private string _dataDirectory;
+
         private string _managedDirectory;
 
         private bool _is64Bit;
 
         public bool Exists => Directory.Exists(InstallationPath);
 
-        public bool IsValid => Utils.IsValidCloneDroneInstallationDirectory(InstallationPath) && _managedDirectory != null;
+        public bool IsValid => Utils.IsValidCloneDroneInstallationDirectory(InstallationPath);
 
         public bool Is64Bit => _is64Bit;
+
+        public string DataDirectory => _dataDirectory;
 
         public string ManagedDirectory => _managedDirectory;
 
@@ -112,8 +116,11 @@ namespace ModBotInstaller
 
         private void setExtraValues()
         {
+            _dataDirectory = null;
             _managedDirectory = null;
             _is64Bit = false;
+
+            if (string.IsNullOrEmpty(InstallationPath) || !Directory.Exists(InstallationPath)) return;
 
             string dataFolder = null;
             if (Release == GameReleaseType.DangerZone)
@@ -122,7 +129,12 @@ namespace ModBotInstaller
                 else if (Platform == GamePlatformType.EpicGames) dataFolder = "Clone Drone in the Danger Zone.exe_Data";
             }
             else if (Release == GameReleaseType.Hyperdome) dataFolder = "Clone Drone in the Hyperdome_Data";
-            if (dataFolder != null) _managedDirectory = Path.Combine(InstallationPath, dataFolder, "Managed");
+
+            if (dataFolder != null)
+            {
+                _dataDirectory = Path.Combine(InstallationPath, dataFolder);
+                _managedDirectory = Path.Combine(InstallationPath, dataFolder, "Managed");
+            }
 
             DirectoryInfo directory = new DirectoryInfo(InstallationPath);
             if (directory.Exists)

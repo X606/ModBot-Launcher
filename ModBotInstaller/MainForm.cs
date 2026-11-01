@@ -176,13 +176,16 @@ namespace ModBotInstaller
                 {
                     // if user selects licensed game in hard way
                     bool isLicensed = false;
-                    foreach (GameInstancesPanelUIItem gameInstanceElement in _gameInstanceItems)
+                    if (_gameInstanceItems != null)
                     {
-                        if (GameInstanceInfo.Compare(gameInstanceElement.GameInfo, customGameInstance))
+                        foreach (GameInstancesPanelUIItem gameInstanceElement in _gameInstanceItems)
                         {
-                            isLicensed = true;
-                            customGameInstance = gameInstanceElement.GameInfo;
-                            break;
+                            if (GameInstanceInfo.Compare(gameInstanceElement.GameInfo, customGameInstance))
+                            {
+                                isLicensed = true;
+                                customGameInstance = gameInstanceElement.GameInfo;
+                                break;
+                            }
                         }
                     }
 

@@ -2,6 +2,7 @@
 using Mono.Cecil.Cil;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -90,11 +91,9 @@ namespace ModBotInstaller.Injector
             updateInjectorProgress(1f);
         }
 
-        public static void AddModdedObjectClass(string managedFolderPath, string injectionClassesPath, Action<float> updateInjectorProgress)
+        public static void AddModdedObjectClass(string assemblyPath, string injectionClassesPath, Action<float> updateInjectorProgress)
         {
             updateInjectorProgress(0f);
-
-            string assemblyPath = Path.Combine(managedFolderPath, "Assembly-CSharp.dll");
 
             Console.WriteLine("Injecting ModdedObject class to the game...");
             if (!File.Exists(injectionClassesPath))
@@ -153,10 +152,18 @@ namespace ModBotInstaller.Injector
 
     public static class ErrorHandler
     {
+        public static void DownloadError(string errorMessage)
+        {
+            DialogResult result = MessageBox.Show(errorMessage, "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error);
+            if (result == DialogResult.Yes)
+            {
+                Process.Start("https://github.com/X606/ModBot/releases/latest");
+            }
+        }
+
         public static void Crash(string errorMessage)
         {
-            MessageBox.Show("ERROR: " + errorMessage, "Error");
-
+            MessageBox.Show(errorMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             MessageBox.Show("WARNING: Your game files may have been corrupted, please verify your game files before starting the game!!!");
             Application.Exit();
         }

@@ -33,7 +33,7 @@ namespace ModBotInstaller
 
         public bool EnableModBotBeta;
         public string ModBotBetaSourceDirectory; // The source directory to install the beta version from
-        public bool ShouldUseBetaPath => EnableModBotBeta && !string.IsNullOrEmpty(ModBotBetaSourceDirectory);
+        public bool ShouldUseBetaPath => EnableModBotBeta && !string.IsNullOrEmpty(ModBotBetaSourceDirectory) && Utils.IsValidBetaInstallationPath(ModBotBetaSourceDirectory);
 
         public bool DontShowFirstPage;
 

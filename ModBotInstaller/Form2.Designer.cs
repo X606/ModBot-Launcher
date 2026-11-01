@@ -328,7 +328,7 @@ namespace ModBotInstaller
             this.modBotSettingsButton.Name = "modBotSettingsButton";
             this.modBotSettingsButton.Size = new System.Drawing.Size(118, 23);
             this.modBotSettingsButton.TabIndex = 19;
-            this.modBotSettingsButton.Text = "Mod-Bot Settings";
+            this.modBotSettingsButton.Text = "Settings";
             this.modBotSettingsButton.UseVisualStyleBackColor = false;
             this.modBotSettingsButton.Click += new System.EventHandler(this.modBotSettingsButton_Click);
             // 
