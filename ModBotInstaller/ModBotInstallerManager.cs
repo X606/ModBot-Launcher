@@ -14,6 +14,8 @@ namespace ModBotInstaller
     {
         private const string TARGET_ASSEMBLY_VAR = "target_assembly=";
 
+        private const string ADDITIONAL_TARGET_ASSEMBLY_VAR = "additional_target_assembly=";
+
         private const string MODBOT_TARGET_ASSEMBLY_VALUE = "ModBot\\ModLibrary.Preloader.dll";
 
         private static readonly string[] _oldFilesInManaged = new string[]
@@ -33,6 +35,13 @@ namespace ModBotInstaller
             "modbot",
         };
 
+        private static readonly string[] _doorstopFilesINGameFolder = new string[]
+        {
+            ".doorstop_version",
+            "doorstop_config.ini",
+            "winhttp.dll"
+        };
+
         public static NewProgressBar ProgressBar;
 
         public static void Install(string installationPath, bool useBeta, GameReleaseType gameVersion, Form2 askingForm, Action onComplete)
@@ -40,6 +49,8 @@ namespace ModBotInstaller
             SetProgress(0f);
             new Thread(delegate ()
             {
+                Thread.Sleep(1000);
+
                 // get installation files from server or local computer
                 string extractedZipFilePath;
                 if (useBeta)
@@ -157,7 +168,7 @@ namespace ModBotInstaller
                 bool replaceTargetAssemblyPath = false;
                 string otherPluginAssemblyPath = null;
                 string doorstopConfigPath = Path.Combine(installationPath, "doorstop_config.ini");
-                if (File.Exists(doorstopConfigPath) && tryParseAssemblyPath(doorstopConfigPath, out otherPluginAssemblyPath))
+                if (File.Exists(doorstopConfigPath) && tryParseAssemblyPath(doorstopConfigPath, TARGET_ASSEMBLY_VAR, out otherPluginAssemblyPath))
                 {
                     Console.WriteLine($"Successfully read other plugin path: {otherPluginAssemblyPath}");
                     if (otherPluginAssemblyPath.Replace('/', '\\') != MODBOT_TARGET_ASSEMBLY_VALUE)
@@ -224,9 +235,68 @@ namespace ModBotInstaller
             }).Start();
         }
 
-        public static void Uninstall(string installationPath)
+        public static void Uninstall(string installationPath, Action onComplete)
         {
-            throw new NotImplementedException("wip");
+            SetProgress(0f);
+            new Thread(delegate ()
+            {
+                Thread.Sleep(1000);
+
+                string modbotFolder = Path.Combine(installationPath, "ModBot");
+                if (Directory.Exists(modbotFolder))
+                {
+                    Utils.TryDeleteDirectory(modbotFolder, true);
+                    Console.WriteLine("Deleted ModBot directory");
+                }
+
+                SetProgress(0.5f);
+
+                bool hasAdditionalPlugin = false;
+                string doorstopConfigPath = Path.Combine(installationPath, "doorstop_config.ini");
+                string modbotConfigPath = Path.Combine(installationPath, "modbot.ini");
+                bool modbotConfigExists = File.Exists(modbotConfigPath);
+                if (File.Exists(doorstopConfigPath) && modbotConfigExists)
+                {
+                    if (tryParseAssemblyPath(modbotConfigPath, ADDITIONAL_TARGET_ASSEMBLY_VAR, out string modbotConfigValue)
+                        && tryParseAssemblyPath(doorstopConfigPath, TARGET_ASSEMBLY_VAR, out string doorstopConfigValue)
+                        && doorstopConfigValue == MODBOT_TARGET_ASSEMBLY_VALUE
+                        && modbotConfigValue != MODBOT_TARGET_ASSEMBLY_VALUE)
+                    {
+                        hasAdditionalPlugin = true;
+                        replaceVarValueInFile(doorstopConfigPath, TARGET_ASSEMBLY_VAR, modbotConfigValue);
+                        Console.WriteLine($"Replaced target assembly value from modbot.ini in doorstop_config.ini");
+                    }
+                }
+
+                if (!hasAdditionalPlugin)
+                {
+                    SetProgress(0.8f);
+                    Console.WriteLine($"Deleting Doorstop files...");
+                    foreach (string file in _doorstopFilesINGameFolder)
+                    {
+                        string oldFilePath = Path.Combine(installationPath, file);
+                        if (File.Exists(oldFilePath))
+                        {
+                            File.Delete(oldFilePath);
+                            Console.WriteLine($"Deleted {file} under Game folder");
+                        }
+                    }
+                }                
+
+                if (modbotConfigExists)
+                {
+                    SetProgress(0.9f);
+                    File.Delete(modbotConfigPath);
+                    Console.WriteLine($"Deleted modbot.ini");
+                }
+
+                SetProgress(1f);
+
+                if (onComplete != null)
+                    CallInMainThread(onComplete);
+
+                Console.WriteLine($"Finished uninstalling");
+            }).Start();
         }
 
         static void OnArchiveDownloadProgress(object sender, DownloadProgressChangedEventArgs args)
@@ -257,9 +327,16 @@ namespace ModBotInstaller
 
         public static ModBotInstallationState GetModBotInstallationState(string installationPath, GameReleaseType gameVersion, out string currentlyInstalledModBotVersion, out string errorMessage)
         {
-            string modLibraryPath = Path.Combine(installationPath, "ModBot", "ModLibrary.dll");
+            if(!Directory.Exists(Path.Combine(installationPath, "ModBot")))
+            {
+                currentlyInstalledModBotVersion = null;
+                errorMessage = null;
+                return ModBotInstallationState.NotInstalled;
+            }
 
-            if (!File.Exists(modLibraryPath))
+            string modLibraryPath = Path.Combine(installationPath, "ModBot", "ModLibrary.dll");
+            string preloaderPath = Path.Combine(installationPath, "ModBot", "ModLibrary.Preloader.dll");
+            if (!File.Exists(preloaderPath) || !File.Exists(modLibraryPath))
             {
                 currentlyInstalledModBotVersion = null;
                 errorMessage = null;
@@ -335,7 +412,7 @@ namespace ModBotInstaller
             }
         }
 
-        static bool tryParseAssemblyPath(string iniFile, out string path)
+        static bool tryParseAssemblyPath(string iniFile, string varName, out string path)
         {
             path = null;
 
@@ -347,9 +424,9 @@ namespace ModBotInstaller
                     string line;
                     while ((line = streamReader.ReadLine()) != null)
                     {
-                        if (line.StartsWith(TARGET_ASSEMBLY_VAR))
+                        if (line.StartsWith(varName))
                         {
-                            path = line.Substring(TARGET_ASSEMBLY_VAR.Length);
+                            path = line.Substring(varName.Length).Trim(' ', '\\', '/').Replace('/', '\\');
                             break;
                         }
                     }
@@ -361,6 +438,59 @@ namespace ModBotInstaller
             }
 
             return !string.IsNullOrEmpty(path);
+        }
+
+        static bool replaceVarValueInFile(string iniFile, string varName, string newValue)
+        {
+            try
+            {
+                int lineIndex = -1;
+                string[] lines = new string[64];
+
+                int length = 0;
+                using (FileStream fileStream = File.OpenRead(iniFile))
+                using (StreamReader streamReader = new StreamReader(fileStream, Encoding.UTF8, true, 256))
+                {
+                    string line;
+                    while (length < lines.Length && (line = streamReader.ReadLine()) != null)
+                    {
+                        lines[length] = line;
+                        if (lineIndex == -1 && line.StartsWith(varName))
+                        {
+                            lineIndex = length;
+                        }
+                        length++;
+                    }
+                }
+
+                if (length == -1) return false;
+
+                /*
+                Console.WriteLine($"LINE NUMBER: {lineIndex + 1}");
+                Console.WriteLine($"LENGTH: {length}");
+                */
+
+                using (FileStream fileStream = File.Open(iniFile, FileMode.Truncate, FileAccess.Write))
+                using (StreamWriter streamWriter = new StreamWriter(fileStream, Encoding.UTF8, 256))
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        if (i == lineIndex)
+                        {
+                            streamWriter.WriteLine(varName + newValue);
+                        }
+                        else
+                        {
+                            streamWriter.WriteLine(lines[i]);
+                        }
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                return false;
+            }
+            return true;
         }
     }
 }

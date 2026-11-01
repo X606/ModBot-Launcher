@@ -108,6 +108,7 @@ namespace ModBotInstaller
                     InstallButton.Show();
                     InstallButton.Text = "Install Mod-Bot";
                     Reinstall.Hide();
+                    Uninstall.Hide();
                     break;
                 case ModBotInstallationState.OutOfDate:
                     StatusLabel.Text = "Mod-Bot out of date";
@@ -115,12 +116,14 @@ namespace ModBotInstaller
                     InstallButton.Show();
                     InstallButton.Text = "Update Mod-Bot";
                     Reinstall.Hide();
+                    Uninstall.Show();
                     break;
                 case ModBotInstallationState.UpToDate:
                     InstallButton.Show();
                     InstallButton.Text = "Start Game";
                     Reinstall.Show();
                     Reinstall.Text = "Reinstall";
+                    Uninstall.Show();
                     StatusLabel.Text = "Mod-Bot up to date!";
                     StatusLabel.ForeColor = Color.FromArgb(124, 252, 0);
                     break;
@@ -128,6 +131,7 @@ namespace ModBotInstaller
                     InstallButton.Show();
                     InstallButton.Text = "Start Game (beta)";
                     Reinstall.Text = "Reinstall stable";
+                    Uninstall.Show();
                     StatusLabel.Text = "Mod-Bot beta installed";
                     StatusLabel.ForeColor = Color.FromArgb(255, 0, 255);
                     break;
@@ -136,6 +140,7 @@ namespace ModBotInstaller
                     InstallButton.Text = "Start Game";
                     Reinstall.Show();
                     Reinstall.Text = "Reinstall";
+                    Uninstall.Show();
                     StatusLabel.Text = "Unable to check latest Mod-Bot version";
                     StatusLabel.ForeColor = Color.FromArgb(125, 0, 125);
                     break;
@@ -260,6 +265,12 @@ namespace ModBotInstaller
             Close();
         }
 
+        void OnUninstallFinished()
+        {
+            MessageBox.Show("Successfully uninstalled Mod-Bot", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Application.Exit();
+        }
+
         public void StartGameAndExit()
         {
             if (UserPreferences.Current.IsLicensedInstall)
@@ -304,7 +315,7 @@ namespace ModBotInstaller
             Application.Exit();
         }
 
-        public void ShowInstallationVisuals()
+        public void ShowInstallationVisuals(bool uninstall)
         {
             installedModsLoading.Hide();
             StatusLabel.Hide();
@@ -313,12 +324,22 @@ namespace ModBotInstaller
             InstallButton.Hide();
             CloseButton.Hide();
             Reinstall.Hide();
+            Uninstall.Hide();
             modBotSettingsButton.Hide();
             LocalVersionLabel.Hide();
             LatestVersionLabel.Hide();
             ProgressBar.Show();
             ProgressBar.Value = 0;
             installingModBotLabel.Show();
+
+            if (uninstall)
+            {
+                installingModBotLabel.Text = "Removing Mod-Bot...";
+            }
+            else
+            {
+                installingModBotLabel.Text = "Installing Mod-Bot...";
+            }
         }
 
         public void ShowDefaultVisuals()
@@ -330,6 +351,7 @@ namespace ModBotInstaller
             InstallButton.Show();
             CloseButton.Show();
             Reinstall.Show();
+            Uninstall.Show();
             modBotSettingsButton.Show();
             LocalVersionLabel.Show();
             LatestVersionLabel.Show();
@@ -343,7 +365,7 @@ namespace ModBotInstaller
         {
             if (_installationState == ModBotInstallationState.NotInstalled || UserPreferences.Current.ShouldUseBetaPath)
             {
-                ShowInstallationVisuals();
+                ShowInstallationVisuals(false);
                 ModBotInstallerManager.ProgressBar = ProgressBar;
                 ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, UserPreferences.Current.ShouldUseBetaPath, GameReleaseType.DangerZone, this, OnInstallFinished);
             }
@@ -355,7 +377,7 @@ namespace ModBotInstaller
 
         private void Reinstall_Click(object sender, EventArgs e)
         {
-            ShowInstallationVisuals();
+            ShowInstallationVisuals(false);
             ModBotInstallerManager.ProgressBar = ProgressBar;
             ModBotInstallerManager.Install(UserPreferences.Current.GameInstallationDirectory, false, GameReleaseType.DangerZone, this, OnInstallFinished);
         }
@@ -370,6 +392,17 @@ namespace ModBotInstaller
             settingsWindow.ShowDialog();
 
             refreshItemsBasedOnCurrentState();
+        }
+
+        private void Uninstall_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show("Are sure you want to uninstall Mod-Bot?", string.Empty, MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (result == DialogResult.Yes)
+            {
+                ShowInstallationVisuals(true);
+                ModBotInstallerManager.ProgressBar = ProgressBar;
+                ModBotInstallerManager.Uninstall(UserPreferences.Current.GameInstallationDirectory, OnUninstallFinished);
+            }
         }
     }
 }

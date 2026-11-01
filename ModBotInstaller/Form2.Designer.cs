@@ -52,8 +52,9 @@ namespace ModBotInstaller
             this.modBotSettingsButton = new System.Windows.Forms.Button();
             this.installingModBotLabel = new System.Windows.Forms.Label();
             this.installedModsLoading = new System.Windows.Forms.Label();
-            this.ProgressBar = new ModBotInstaller.NewProgressBar();
             this.button1 = new System.Windows.Forms.Button();
+            this.ProgressBar = new ModBotInstaller.NewProgressBar();
+            this.Uninstall = new System.Windows.Forms.Button();
             this.installedModsView.SuspendLayout();
             this.installedModsItem_TEMPLATE.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.installedModsItem_TEMPLATE_SettingsIcon)).BeginInit();
@@ -358,18 +359,6 @@ namespace ModBotInstaller
             this.installedModsLoading.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.installedModsLoading.Visible = false;
             // 
-            // ProgressBar
-            // 
-            this.ProgressBar.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.ProgressBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(26)))), ((int)(((byte)(26)))));
-            this.ProgressBar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(104)))), ((int)(((byte)(0)))));
-            this.ProgressBar.Location = new System.Drawing.Point(12, 241);
-            this.ProgressBar.Name = "ProgressBar";
-            this.ProgressBar.Progress = 0F;
-            this.ProgressBar.Size = new System.Drawing.Size(493, 23);
-            this.ProgressBar.TabIndex = 1;
-            this.ProgressBar.Visible = false;
-            // 
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
@@ -387,6 +376,34 @@ namespace ModBotInstaller
             this.button1.UseVisualStyleBackColor = false;
             this.button1.Visible = false;
             // 
+            // ProgressBar
+            // 
+            this.ProgressBar.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.ProgressBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(26)))), ((int)(((byte)(26)))));
+            this.ProgressBar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(104)))), ((int)(((byte)(0)))));
+            this.ProgressBar.Location = new System.Drawing.Point(12, 241);
+            this.ProgressBar.Name = "ProgressBar";
+            this.ProgressBar.Progress = 0F;
+            this.ProgressBar.Size = new System.Drawing.Size(493, 23);
+            this.ProgressBar.TabIndex = 1;
+            this.ProgressBar.Visible = false;
+            // 
+            // Uninstall
+            // 
+            this.Uninstall.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.Uninstall.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(65)))), ((int)(((byte)(65)))), ((int)(((byte)(65)))));
+            this.Uninstall.FlatAppearance.BorderSize = 0;
+            this.Uninstall.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.Uninstall.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Uninstall.ForeColor = System.Drawing.Color.White;
+            this.Uninstall.Location = new System.Drawing.Point(415, 440);
+            this.Uninstall.Name = "Uninstall";
+            this.Uninstall.Size = new System.Drawing.Size(94, 23);
+            this.Uninstall.TabIndex = 23;
+            this.Uninstall.Text = "Uninstall";
+            this.Uninstall.UseVisualStyleBackColor = false;
+            this.Uninstall.Click += new System.EventHandler(this.Uninstall_Click);
+            // 
             // Form2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -394,6 +411,7 @@ namespace ModBotInstaller
             this.AutoValidate = System.Windows.Forms.AutoValidate.EnablePreventFocusChange;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(22)))), ((int)(((byte)(22)))), ((int)(((byte)(22)))));
             this.ClientSize = new System.Drawing.Size(517, 504);
+            this.Controls.Add(this.Uninstall);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.installedModsLoading);
             this.Controls.Add(this.modBotSettingsButton);
@@ -452,5 +470,6 @@ namespace ModBotInstaller
         private NewProgressBar installedModsItem_TEMPLATE_UpdateProgressBar;
         private System.Windows.Forms.Label installedModsItem_TEMPLATE_UpdateStatus;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button Uninstall;
     }
 }
